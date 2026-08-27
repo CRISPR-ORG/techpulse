@@ -1,0 +1,245 @@
+/* ═══════════════════════════════════════════════════════════
+   NAVBAR
+   ═══════════════════════════════════════════════════════════ */
+
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--nav-height);
+  z-index: var(--z-nav);
+  background: rgba(10, 10, 10, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid transparent;
+  transition: all var(--transition-base);
+}
+
+.navbar.scrolled {
+  background: rgba(10, 10, 10, 0.95);
+  border-bottom-color: var(--border-primary);
+}
+
+.navbar-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 var(--space-xl);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.brand-text {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--green);
+  letter-spacing: 2px;
+}
+
+.brand-separator {
+  color: var(--text-dim);
+  font-weight: 300;
+}
+
+.brand-sub {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+}
+
+.navbar-links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.nav-link {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  text-decoration: none;
+  white-space: nowrap;
+  position: relative;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  width: 0;
+  height: 1px;
+  background: var(--green);
+  transition: all var(--transition-base);
+  transform: translateX(-50%);
+  box-shadow: 0 0 4px var(--green);
+}
+
+.nav-link:hover {
+  color: var(--green);
+  text-shadow: 0 0 8px var(--green-glow);
+}
+
+.nav-link:hover::after {
+  width: 60%;
+}
+
+.nav-link.active {
+  color: var(--green);
+}
+
+.nav-link.active::after {
+  width: 60%;
+}
+
+.nav-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.nav-dropdown > .nav-link {
+  cursor: pointer;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: rgba(10, 10, 10, 0.95);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  padding: 8px 0;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  visibility: hidden;
+  transition: all var(--transition-fast);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  z-index: 10;
+}
+
+.nav-dropdown:hover .dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+.dropdown-item {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+  padding: 10px 16px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all var(--transition-fast);
+  text-align: center;
+}
+
+.dropdown-item:hover {
+  color: var(--green);
+  background: rgba(0, 255, 128, 0.05);
+}
+
+.navbar-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.status-text {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--green);
+  letter-spacing: 1.5px;
+  font-weight: 500;
+}
+
+.navbar-hamburger {
+  display: none;
+  background: none;
+  border: none;
+  padding: 8px;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.navbar-hamburger span {
+  display: block;
+  width: 22px;
+  height: 1.5px;
+  background: var(--green);
+  transition: all var(--transition-base);
+}
+
+.navbar-hamburger.open span:nth-child(1) {
+  transform: rotate(45deg) translate(4px, 4px);
+}
+
+.navbar-hamburger.open span:nth-child(2) {
+  opacity: 0;
+}
+
+.navbar-hamburger.open span:nth-child(3) {
+  transform: rotate(-45deg) translate(5px, -5px);
+}
+
+@media (max-width: 1024px) {
+  .navbar-links {
+    position: fixed;
+    top: var(--nav-height);
+    left: 0;
+    right: 0;
+    background: rgba(10, 10, 10, 0.98);
+    backdrop-filter: blur(20px);
+    flex-direction: column;
+    padding: var(--space-xl);
+    gap: 0;
+    border-bottom: 1px solid var(--border-primary);
+    transform: translateY(-120%);
+    opacity: 0;
+    transition: all var(--transition-base);
+  }
+
+  .navbar-links.open {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  .navbar-links .nav-link {
+    font-size: 0.85rem;
+    padding: 14px;
+    width: 100%;
+    text-align: center;
+    border-bottom: 1px solid var(--border-primary);
+  }
+
+  .navbar-hamburger {
+    display: flex;
+  }
+
+  .navbar-status {
+    display: none;
+  }
+}

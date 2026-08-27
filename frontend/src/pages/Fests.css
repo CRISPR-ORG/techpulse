@@ -1,0 +1,192 @@
+/* ═══════════════════════════════════════════════════════════
+   FESTS PAGE
+   ═══════════════════════════════════════════════════════════ */
+
+.fests-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-xl);
+}
+
+.fest-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: all var(--transition-base);
+  animation: fadeInUp 0.5s ease backwards;
+  cursor: pointer;
+}
+
+.fest-card:hover {
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-card);
+}
+
+.fest-card-top {
+  padding: var(--space-xl);
+}
+
+.fest-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-lg);
+}
+
+.fest-type-tag {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.fest-name {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text-heading);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: var(--space-xs);
+}
+
+.fest-tagline {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--green);
+  font-style: italic;
+  margin-bottom: var(--space-sm);
+}
+
+.fest-date {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin-bottom: var(--space-md);
+}
+
+.fest-description {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin-bottom: var(--space-md);
+}
+
+.fest-highlight {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--yellow);
+  background: rgba(255, 204, 0, 0.05);
+  border-left: 2px solid var(--yellow);
+  padding: var(--space-sm) var(--space-md);
+  margin-top: var(--space-md);
+}
+
+.highlight-icon {
+  margin-right: 6px;
+}
+
+/* Events section - collapsed by default */
+.fest-events {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.5s ease, padding 0.3s ease;
+  padding: 0 var(--space-xl);
+  background: rgba(0, 0, 0, 0.2);
+  border-top: 1px solid transparent;
+}
+
+.fest-card.expanded .fest-events {
+  max-height: 500px;
+  padding: var(--space-xl);
+  border-top-color: var(--border-primary);
+}
+
+.fest-events-title {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--green);
+  letter-spacing: 2px;
+  margin-bottom: var(--space-md);
+}
+
+.fest-events-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.fest-event-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid rgba(42, 42, 42, 0.5);
+}
+
+.fest-event-row:last-child {
+  border-bottom: none;
+}
+
+.fest-event-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fest-event-name {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+.fest-event-winner {
+  font-size: 0.75rem;
+  color: var(--text-primary);
+}
+
+.fest-event-winner .tbd {
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.fest-event-college {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+}
+
+.fest-event-prize {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--green);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.fest-expand-hint {
+  text-align: center;
+  padding: var(--space-md);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  border-top: 1px solid var(--border-primary);
+  transition: color var(--transition-fast);
+}
+
+.fest-card:hover .fest-expand-hint {
+  color: var(--green);
+}
+
+@media (max-width: 768px) {
+  .fests-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fest-name {
+    font-size: 1.5rem;
+  }
+}

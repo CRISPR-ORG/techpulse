@@ -1,0 +1,185 @@
+/* ═══════════════════════════════════════════════════════════
+   CAMPUS PULSE PAGE
+   ═══════════════════════════════════════════════════════════ */
+
+.cp-toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-xl);
+  margin-bottom: var(--space-2xl);
+  flex-wrap: wrap;
+}
+
+.cp-toggle {
+  display: inline-flex;
+  flex-wrap: wrap;
+  border: 1px solid var(--border-primary);
+  background: var(--bg-card);
+}
+
+.cp-toggle-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  padding: 10px 14px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 1.5px;
+  transition: all var(--transition-fast);
+}
+
+.cp-toggle-btn.active {
+  color: var(--bg-primary);
+  background: var(--green);
+  box-shadow: var(--shadow-glow-green);
+}
+
+.cp-toggle-btn:hover {
+  color: var(--text-primary);
+}
+
+.cp-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 1px;
+}
+
+.cp-hint-text {
+  opacity: 0.9;
+}
+
+.cp-feed {
+  display: flex;
+  flex-direction: column;
+}
+
+.cp-empty-state {
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.cp-item {
+  display: flex;
+  gap: var(--space-xl);
+  padding: var(--space-lg) 0;
+  border-bottom: 1px solid var(--border-primary);
+  transition: all var(--transition-base);
+}
+
+.cp-item:hover {
+  background: var(--bg-card);
+  padding-left: var(--space-md);
+  border-radius: var(--radius-sm);
+}
+
+.cp-time {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  min-width: 90px;
+  padding-top: 4px;
+  flex-shrink: 0;
+}
+
+.cp-content {
+  flex: 1;
+}
+
+.cp-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xs);
+}
+
+.cp-title {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-heading);
+  margin-bottom: var(--space-xs);
+  line-height: 1.35;
+}
+
+.cp-detail {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.cp-image-link {
+  display: block;
+  margin-top: var(--space-md);
+}
+
+.cp-image {
+  width: min(100%, 520px);
+  max-height: 260px;
+  object-fit: cover;
+  border: 1px solid var(--border-primary);
+  transition: border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.cp-image-link:hover .cp-image {
+  border-color: var(--border-hover);
+  transform: translateY(-1px);
+}
+
+.cp-footer {
+  margin-top: var(--space-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border-primary);
+  flex-wrap: wrap;
+}
+
+.cp-source {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--green-dim);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.cp-open-link {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: var(--green);
+  letter-spacing: 1px;
+}
+
+.cp-open-link:hover {
+  color: #fff;
+}
+
+.cp-fests .container {
+  padding: 0;
+}
+
+@media (max-width: 768px) {
+  .cp-item {
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+  .cp-time {
+    min-width: 72px;
+    padding-top: 0;
+  }
+
+  .cp-image {
+    width: 100%;
+    max-height: 220px;
+  }
+}
+

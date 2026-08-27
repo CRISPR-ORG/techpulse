@@ -1,0 +1,109 @@
+/* ═══════════════════════════════════════════════════════════
+   CLUBS PAGE
+   ═══════════════════════════════════════════════════════════ */
+
+.clubs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-xl);
+}
+
+.club-card {
+  animation: fadeInUp 0.5s ease backwards;
+  display: flex;
+  flex-direction: column;
+}
+
+.club-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-lg);
+}
+
+.club-members {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+
+.club-name {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-heading);
+  margin-bottom: var(--space-xs);
+}
+
+.club-tagline {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--green);
+  font-style: italic;
+  margin-bottom: var(--space-md);
+}
+
+.club-description {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin-bottom: var(--space-lg);
+}
+
+.club-activity {
+  flex: 1;
+  margin-bottom: var(--space-lg);
+}
+
+.club-activity-title {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--green);
+  letter-spacing: 2px;
+  margin-bottom: var(--space-md);
+}
+
+.club-activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.club-activity-item {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  display: flex;
+  gap: var(--space-sm);
+  line-height: 1.5;
+}
+
+.activity-bullet {
+  color: var(--green);
+  flex-shrink: 0;
+  font-weight: 700;
+}
+
+.club-socials {
+  display: flex;
+  gap: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border-primary);
+}
+
+.club-social-link {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  letter-spacing: 1.5px;
+  transition: color var(--transition-fast);
+}
+
+.club-social-link:hover {
+  color: var(--green);
+}
+
+@media (max-width: 768px) {
+  .clubs-grid {
+    grid-template-columns: 1fr;
+  }
+}

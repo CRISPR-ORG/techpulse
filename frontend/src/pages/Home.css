@@ -1,0 +1,320 @@
+/* ═══════════════════════════════════════════════════════════
+   HOME PAGE
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── HERO ── */
+.hero {
+  padding: calc(var(--nav-height) + var(--ticker-height) + var(--space-4xl)) 0 var(--space-5xl);
+  position: relative;
+  overflow: hidden;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3xl);
+  align-items: center;
+}
+
+.hero-subtitle {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  margin-bottom: var(--space-xl);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hero-subtitle::before {
+  content: '◆';
+  color: var(--green);
+  font-size: 0.5rem;
+}
+
+.hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 7vw, 5.5rem);
+  font-weight: 800;
+  line-height: 1.05;
+  margin-bottom: var(--space-xl);
+  letter-spacing: -1px;
+}
+
+.hero-title-solid {
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.hero-desc {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.8;
+  margin-bottom: var(--space-2xl);
+  max-width: 440px;
+}
+
+.hero-actions {
+  display: flex;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.hero-terminal {
+  position: relative;
+  animation: fadeInUp 0.8s ease 0.3s backwards;
+}
+
+.hero-grid-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    linear-gradient(rgba(0, 255, 65, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 65, 0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hero .container {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── LOOKING FOR ── */
+.looking-for-center {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.looking-title {
+  font-family: var(--font-mono);
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 400;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+.looking-title .highlight {
+  color: var(--green);
+  font-weight: 700;
+  font-size: clamp(3rem, 7vw, 5rem);
+  display: block;
+  text-shadow: 0 0 30px var(--green-glow);
+}
+
+.typing-word::after {
+  content: '|';
+  animation: blink 0.8s step-end infinite;
+  color: var(--green);
+  margin-left: 4px;
+}
+
+/* ── STATS ── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: var(--space-md);
+}
+
+.stat-card {
+  text-align: center;
+  padding: var(--space-xl) var(--space-md);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-base);
+}
+
+.stat-card:hover {
+  border-color: var(--green);
+  box-shadow: var(--shadow-glow-green);
+}
+
+.stat-number {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--green);
+  line-height: 1;
+  margin-bottom: var(--space-sm);
+}
+
+.stat-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+}
+
+/* ── NEWS CARDS ── */
+.news-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.news-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.news-category {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  letter-spacing: 1.5px;
+}
+
+.news-card-title {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-heading);
+  line-height: 1.4;
+}
+
+.news-card-desc {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  flex: 1;
+}
+
+.news-card-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border-primary);
+}
+
+.news-source {
+  font-size: 0.7rem;
+  color: var(--green-dim);
+  font-weight: 500;
+}
+
+.news-time {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+
+.section-cta {
+  text-align: center;
+  margin-top: var(--space-2xl);
+}
+
+/* ── PULSE FEED ── */
+.pulse-feed {
+  display: flex;
+  flex-direction: column;
+}
+
+.pulse-item {
+  display: flex;
+  gap: var(--space-xl);
+  padding: var(--space-lg) 0;
+  border-bottom: 1px solid var(--border-primary);
+  transition: all var(--transition-base);
+}
+
+.pulse-item:hover {
+  background: var(--bg-card);
+  padding-left: var(--space-md);
+  border-radius: var(--radius-sm);
+}
+
+.pulse-time {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  min-width: 80px;
+  padding-top: 4px;
+  flex-shrink: 0;
+}
+
+.pulse-content {
+  flex: 1;
+}
+
+.pulse-header {
+  margin-bottom: var(--space-xs);
+}
+
+.pulse-title {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-heading);
+  margin-bottom: var(--space-xs);
+}
+
+.pulse-detail {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* ── SKILL CARDS ── */
+.skill-number {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--red);
+  letter-spacing: 1.5px;
+  font-weight: 600;
+  display: block;
+  margin-bottom: var(--space-md);
+}
+
+.skill-title {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-heading);
+  line-height: 1.4;
+  margin-bottom: var(--space-md);
+}
+
+.skill-desc {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+/* ── Responsive ── */
+@media (max-width: 1024px) {
+  .hero-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-2xl);
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .hero {
+    padding-top: calc(var(--nav-height) + var(--ticker-height) + var(--space-2xl));
+    min-height: auto;
+  }
+
+  .hero-title {
+    font-size: 2.5rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

@@ -1,0 +1,229 @@
+/* ═══════════════════════════════════════════════════════════
+   FEED PAGE — X / Social
+   ═══════════════════════════════════════════════════════════ */
+
+.feed-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: var(--space-2xl);
+  align-items: start;
+}
+
+.feed-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+/* ── Tweet Cards ── */
+.tweet-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  transition: all var(--transition-base);
+  animation: fadeInUp 0.5s ease backwards;
+}
+
+.tweet-card:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-card-hover);
+}
+
+.tweet-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.tweet-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.avatar-letter {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--green);
+}
+
+.tweet-user-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.tweet-handle {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+.tweet-time {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+
+.tweet-platform {
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.tweet-content {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  line-height: 1.7;
+  margin-bottom: var(--space-lg);
+  white-space: pre-wrap;
+}
+
+.tweet-footer {
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border-primary);
+}
+
+.tweet-stats {
+  display: flex;
+  gap: var(--space-xl);
+}
+
+.tweet-stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  transition: color var(--transition-fast);
+}
+
+.tweet-stat:hover {
+  color: var(--text-secondary);
+}
+
+/* ── Sidebar ── */
+.feed-sidebar {
+  position: sticky;
+  top: calc(var(--nav-height) + var(--ticker-height) + var(--space-xl));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.feed-sidebar-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+}
+
+.sidebar-title {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--green);
+  letter-spacing: 2px;
+  margin-bottom: var(--space-lg);
+}
+
+.trending-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.trending-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.trending-tag {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.trending-count {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+}
+
+.follow-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.follow-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.follow-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.follow-avatar span {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--green);
+}
+
+.follow-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.follow-name {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.follow-type {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+}
+
+@media (max-width: 1024px) {
+  .feed-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .feed-sidebar {
+    position: static;
+    flex-direction: row;
+  }
+
+  .feed-sidebar-card {
+    flex: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .feed-sidebar {
+    flex-direction: column;
+  }
+}

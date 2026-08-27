@@ -1,0 +1,46 @@
+.mesh-background {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.mesh-background__canvas,
+.mesh-background__glow,
+.mesh-background__grain {
+  position: absolute;
+  inset: 0;
+}
+
+.mesh-background__canvas {
+  width: 100%;
+  height: 100%;
+  opacity: 0.78;
+}
+
+.mesh-background__glow {
+  background:
+    radial-gradient(circle 220px at var(--cursor-follower-x, 50vw) var(--cursor-follower-y, 35vh), rgba(0, 255, 65, 0.08), transparent 72%),
+    radial-gradient(circle 320px at var(--cursor-x, 50vw) var(--cursor-y, 35vh), rgba(0, 255, 65, 0.12), transparent 70%);
+  filter: blur(18px);
+  opacity: 0.7;
+}
+
+.mesh-background__grain {
+  background:
+    radial-gradient(circle at top, rgba(0, 255, 65, 0.08), transparent 40%),
+    linear-gradient(180deg, rgba(0, 255, 65, 0.04), transparent 18%, transparent 82%, rgba(0, 255, 65, 0.05));
+  mix-blend-mode: screen;
+  opacity: 0.35;
+}
+
+@media (max-width: 768px) {
+  .mesh-background__canvas {
+    opacity: 0.65;
+  }
+
+  .mesh-background__glow {
+    opacity: 0.45;
+  }
+}

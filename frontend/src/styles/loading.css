@@ -1,0 +1,136 @@
+/* ═══════════════════════════════════════════════════════════
+   LOADING SCREEN — Boot Sequence
+   ═══════════════════════════════════════════════════════════ */
+
+.loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--bg-loading);
+  z-index: var(--z-loading);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 10% 10%;
+  font-family: var(--font-mono);
+  overflow: hidden;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.loading-screen.fade-out {
+  opacity: 0;
+  transform: translateY(-20px);
+}
+
+.loading-screen::before {
+  content: '';
+  position: absolute;
+  top: -100%;
+  left: 0;
+  width: 100%;
+  height: 200%;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 255, 65, 0.015) 2px,
+    rgba(0, 255, 65, 0.015) 4px
+  );
+  animation: scanline 8s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.boot-line {
+  font-size: 0.85rem;
+  line-height: 1.8;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 2;
+}
+
+.boot-line.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.boot-line .timestamp {
+  color: var(--text-dim);
+  margin-right: 8px;
+}
+
+.boot-line .ok {
+  color: var(--green);
+  font-weight: 600;
+}
+
+.boot-line .fail {
+  color: var(--red);
+  font-weight: 600;
+}
+
+.boot-line .module {
+  color: var(--text-secondary);
+}
+
+.boot-line .action {
+  color: var(--text-primary);
+}
+
+.boot-ascii {
+  margin-top: var(--space-xl);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  z-index: 2;
+  position: relative;
+}
+
+.boot-ascii.visible {
+  opacity: 1;
+}
+
+.boot-ascii pre {
+  font-size: clamp(0.4rem, 1.2vw, 0.85rem);
+  color: var(--green);
+  line-height: 1.2;
+  text-shadow: 0 0 10px var(--green-glow);
+  letter-spacing: 1px;
+}
+
+.boot-enter {
+  margin-top: var(--space-lg);
+  font-size: 0.9rem;
+  color: var(--green);
+  opacity: 0;
+  z-index: 2;
+  position: relative;
+}
+
+.boot-enter.visible {
+  opacity: 1;
+}
+
+.boot-enter .cursor {
+  display: inline-block;
+  width: 10px;
+  height: 18px;
+  background: var(--green);
+  margin-left: 4px;
+  animation: blink 0.8s step-end infinite;
+  vertical-align: text-bottom;
+}
+
+.boot-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: var(--green);
+  box-shadow: var(--shadow-glow-green);
+  transition: width 0.1s linear;
+  z-index: 2;
+}

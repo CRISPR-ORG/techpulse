@@ -1,0 +1,205 @@
+/* ═══════════════════════════════════════════════════════════
+   OPPORTUNITIES PAGE
+   ═══════════════════════════════════════════════════════════ */
+
+.opp-header-row {
+  display: grid;
+  grid-template-columns: 70px 2fr 1.2fr 1fr 1fr 1fr 80px;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--border-primary);
+  margin-bottom: var(--space-sm);
+}
+
+.opp-section {
+  scroll-margin-top: calc(var(--nav-height) + var(--ticker-height) + var(--space-xl));
+}
+
+.opp-col-header {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.opp-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.opp-row {
+  display: grid;
+  grid-template-columns: 70px 2fr 1.2fr 1fr 1fr 1fr 80px;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  border-bottom: 1px solid var(--border-primary);
+  align-items: center;
+  transition: all var(--transition-base);
+  animation: fadeInUp 0.4s ease backwards;
+}
+
+.opp-row:hover {
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+}
+
+.opp-id {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+}
+
+.opp-role {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-heading);
+  margin-bottom: 4px;
+}
+
+.opp-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.opp-tag {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  color: var(--text-dim);
+  background: var(--bg-secondary);
+  padding: 2px 8px;
+  border-radius: 2px;
+  letter-spacing: 0.5px;
+}
+
+.opp-company-name {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  font-weight: 500;
+  display: block;
+}
+
+.opp-location {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+
+.opp-stipend {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--green);
+  font-weight: 600;
+}
+
+.opp-deadline {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.opp-type-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.opp-apply {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--green);
+  letter-spacing: 1px;
+  transition: all var(--transition-fast);
+}
+
+.opp-apply:hover {
+  color: #fff;
+  letter-spacing: 2px;
+}
+
+/* Mobile cards */
+.opp-cards-mobile {
+  display: none;
+}
+
+.opp-card-mobile {
+  animation: fadeInUp 0.4s ease backwards;
+}
+
+.opp-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-md);
+}
+
+.opp-card-tags {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.opp-card-role {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-heading);
+  margin-bottom: var(--space-xs);
+}
+
+.opp-card-company {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-md);
+}
+
+.opp-card-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--space-md);
+}
+
+.opp-card-stipend {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--green);
+  font-weight: 600;
+}
+
+.opp-card-deadline {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.opp-card-skills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: var(--space-lg);
+}
+
+.opp-card-apply {
+  width: 100%;
+  justify-content: center;
+}
+
+@media (max-width: 1024px) {
+  .opp-header-row,
+  .opp-list {
+    display: none;
+  }
+
+  .opp-cards-mobile {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-xl);
+  }
+}
+
+@media (max-width: 768px) {
+  .opp-cards-mobile {
+    grid-template-columns: 1fr;
+  }
+}

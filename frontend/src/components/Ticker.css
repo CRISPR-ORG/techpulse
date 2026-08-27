@@ -1,0 +1,67 @@
+/* ═══════════════════════════════════════════════════════════
+   TICKER BAR
+   ═══════════════════════════════════════════════════════════ */
+
+.ticker {
+  width: 100%;
+  height: var(--ticker-height);
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-primary);
+  border-bottom: 1px solid var(--border-primary);
+  overflow: hidden;
+  position: relative;
+  margin-top: var(--nav-height);
+}
+
+.ticker::before,
+.ticker::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 80px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.ticker::before {
+  left: 0;
+  background: linear-gradient(90deg, var(--bg-secondary), transparent);
+}
+
+.ticker::after {
+  right: 0;
+  background: linear-gradient(270deg, var(--bg-secondary), transparent);
+}
+
+.ticker-track {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  white-space: nowrap;
+  animation: tickerScroll 40s linear infinite;
+  width: max-content;
+}
+
+.ticker-item {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 0 var(--space-xl);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.ticker-bullet {
+  color: var(--green);
+  font-size: 0.5rem;
+}
+
+@keyframes tickerScroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-33.33%); }
+}
