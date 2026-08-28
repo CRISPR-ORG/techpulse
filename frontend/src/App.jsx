@@ -58,7 +58,9 @@ function AppContent() {
         <Route path="/news" element={<News />} />
         <Route path="/campus-pulse" element={<CampusPulse />} />
         <Route path="/opportunities" element={<Opportunities />} />
-        <Route path="/opensource" element={<OpenSource />} />
+        {import.meta.env.VITE_SHOW_OPENSOURCE === "true" && (
+          <Route path="/opensource" element={<OpenSource />} />
+        )}
         <Route path="/fests" element={<Fests />} />
         <Route path="/clubs" element={<Clubs />} />
         <Route path="/feed" element={<Feed />} />

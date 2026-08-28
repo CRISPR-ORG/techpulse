@@ -47,7 +47,7 @@ export default function Navbar() {
 
           <div className="nav-dropdown">
             <span
-              className={`nav-link ${["/opportunities", "/opensource"].includes(location.pathname) ? "active" : ""}`}
+              className={`nav-link ${["/opportunities", ...(import.meta.env.VITE_SHOW_OPENSOURCE === "true" ? ["/opensource"] : [])].includes(location.pathname) ? "active" : ""}`}
             >
               OPPORTUNITIES ▾
             </span>
@@ -55,9 +55,11 @@ export default function Navbar() {
               <Link to="/opportunities" className="dropdown-item">
                 Job Opportunities
               </Link>
-              <Link to="/opensource" className="dropdown-item">
-                Open Source
-              </Link>
+              {import.meta.env.VITE_SHOW_OPENSOURCE === "true" && (
+                <Link to="/opensource" className="dropdown-item">
+                  Open Source
+                </Link>
+              )}
             </div>
           </div>
 
