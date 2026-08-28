@@ -1,72 +1,127 @@
 const express = require("express");
+const fs = require("fs/promises");
+const path = require("path");
 const { getJSON, setJSON } = require("../services/cache/cacheService");
 const { cacheKeys, CACHE_TTL } = require("../services/cache/cacheKeys");
+const { fetchOpenSourceData } = require("../services/fetchers/githubFetcher");
+
 const router = express.Router();
+
+// GitHub's search API allows only 10 requests/hour unauthenticated, and one
+// refresh spends seven of them. The snapshot is mirrored to disk so a cold
+// Redis (restart, flush) does not force another round of live searches.
+const DAILY_CACHE_FILE = path.join(
+  __dirname,
+  "../../.cache/github-opensource-daily.json",
+);
+
+let refreshPromise = null;
+
+function hasData(payload) {
+  return Boolean(payload) && Array.isArray(payload.items);
+}
+
+function isFresh(timestamp) {
+  if (!timestamp) return false;
+  const parsed = Date.parse(timestamp);
+  if (Number.isNaN(parsed)) return false;
+  return Date.now() - parsed < CACHE_TTL.GITHUB_DAILY * 1000;
+}
+
+async function readFileCache() {
+  try {
+    const raw = await fs.readFile(DAILY_CACHE_FILE, "utf8");
+    const parsed = JSON.parse(raw);
+    return { fetchedAt: parsed?.fetchedAt || null, data: parsed?.data || null };
+  } catch {
+    return { fetchedAt: null, data: null };
+  }
+}
+
+async function writeFileCache(data) {
+  try {
+    await fs.mkdir(path.dirname(DAILY_CACHE_FILE), { recursive: true });
+    await fs.writeFile(
+      DAILY_CACHE_FILE,
+      JSON.stringify({ fetchedAt: new Date().toISOString(), data }, null, 2),
+      "utf8",
+    );
+  } catch (err) {
+    console.error("[GitHub] file-cache write failed:", err.message || err);
+  }
+}
+
+async function refreshOpenSourceCache({ force = false } = {}) {
+  const key = cacheKeys.githubOpportunitiesDaily();
+  let fallback = null;
+
+  const cached = await getJSON(key);
+  if (hasData(cached)) {
+    if (!force) return cached;
+    fallback = cached;
+  } else {
+    const file = await readFileCache();
+    if (hasData(file.data)) {
+      fallback = file.data;
+
+      if (!force && isFresh(file.fetchedAt)) {
+        await setJSON(key, file.data, CACHE_TTL.GITHUB_DAILY);
+        return file.data;
+      }
+    }
+  }
+
+  // Collapse concurrent misses into one upstream refresh.
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = (async () => {
+    let live = null;
+
+    try {
+      live = await fetchOpenSourceData();
+    } catch (err) {
+      console.error("[GitHub] refresh failed:", err.message || err);
+      live = null;
+    }
+
+    if (!hasData(live) || live.items.length === 0) {
+      // Rate limited or upstream down: keep serving the last good snapshot
+      // rather than emptying the page.
+      return hasData(fallback) ? fallback : null;
+    }
+
+    await setJSON(key, live, CACHE_TTL.GITHUB_DAILY);
+    await writeFileCache(live);
+    return live;
+  })();
+
+  try {
+    return await refreshPromise;
+  } finally {
+    refreshPromise = null;
+  }
+}
 
 router.get("/", async (req, res) => {
   try {
-    const cacheKey = cacheKeys.githubOpportunitiesDaily();
-    const cached = await getJSON(cacheKey);
-    if (cached !== null) {
-      return res.json(cached);
+    const payload = await refreshOpenSourceCache({ force: false });
+
+    if (!hasData(payload)) {
+      return res.status(503).json({
+        error:
+          "GitHub data is unavailable right now (rate limited). Set GITHUB_TOKEN to raise the limit.",
+        items: [],
+        repos: [],
+        total_count: 0,
+      });
     }
 
-    const token = process.env.GITHUB_TOKEN;
-    const url =
-      'https://api.github.com/search/issues?q=is:issue+is:open+label:"good+first+issue"+language:javascript,typescript+archived:false&sort=created&order=desc&per_page=12';
-
-    const response = await fetch(url, {
-      headers: {
-        Authorization: `token ${token}`,
-        "User-Agent": "TechPulse-Backend",
-        Accept: "application/vnd.github+json",
-      },
-    });
-
-    if (response.status === 403) {
-      return res
-        .status(403)
-        .json({ error: "Rate limit reached, try again in an hour" });
-    }
-
-    if (!response.ok) {
-      return res
-        .status(response.status)
-        .json({ error: "Failed to fetch from GitHub API" });
-    }
-
-    const data = await response.json();
-
-    // Map the response to a clean shape the frontend expects
-    const items = (data.items || []).map((item) => {
-      let repoName = "unknown/repo";
-      if (item.repository_url) {
-        const parts = item.repository_url.split("/");
-        if (parts.length >= 2) {
-          repoName = parts.slice(-2).join("/");
-        }
-      }
-
-      return {
-        id: item.id,
-        title: item.title,
-        repoName,
-        labels: (item.labels || []).map((l) => ({
-          id: l.id,
-          name: l.name,
-          color: l.color,
-        })),
-        html_url: item.html_url,
-      };
-    });
-
-    const payload = { total_count: data.total_count || 0, items };
-    await setJSON(cacheKey, payload, CACHE_TTL.GITHUB_DAILY);
-    res.json(payload);
+    return res.json(payload);
   } catch (err) {
-    console.error("GitHub API error:", err.message);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("[GitHub] request failed:", err.message || err);
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
 module.exports = router;
+module.exports.refreshOpenSourceCache = refreshOpenSourceCache;

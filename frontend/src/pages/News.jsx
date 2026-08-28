@@ -1,15 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   buildStoryCards,
   newsApi,
-  sortStoriesByClicks,
+  sortCardsByNewest,
 } from "../services/apiClient";
-import TerminalWindow from "../components/TerminalWindow";
 import { CampusPulseContent } from "./CampusPulse";
 import "./News.css";
 
 const NEWS_FILTERS = ["ALL", "AI", "NEWS"];
-const STORIES_PAGE_SIZE = 20;
+const STORIES_PAGE_SIZE = 30;
 
 function inferTopic({ category, title, description }) {
   const haystack =
@@ -28,7 +27,7 @@ function inferTopic({ category, title, description }) {
 
 export default function News() {
   const [techNews, setTechNews] = useState([]);
-  const [sourcesCount, setSourcesCount] = useState(0);
+  const [totalStories, setTotalStories] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -58,21 +57,21 @@ export default function News() {
       setOffset(0);
 
       try {
-        const [stories, trendingStories, sources] = await Promise.all([
-          newsApi.getStories({ limit: STORIES_PAGE_SIZE, offset: 0 }),
+        const [stories, trendingStories, countResp] = await Promise.all([
+          newsApi.getStories({
+            limit: STORIES_PAGE_SIZE,
+            offset: 0,
+            includeLead: true,
+          }),
           newsApi.getTrendingStories().catch(() => []),
-          newsApi.getSources().catch(() => []),
+          newsApi.getStoriesCount().catch(() => null),
         ]);
 
-        const rankedStories = sortStoriesByClicks(
-          stories || [],
-          trendingStories || [],
-        );
         const trendingIds = new Set(
           (trendingStories || []).map((story) => story.id),
         );
-        const cards = await buildStoryCards(rankedStories, trendingIds);
-        const cardsWithTopic = cards.map((card) => ({
+        const cards = await buildStoryCards(stories || [], trendingIds);
+        const cardsWithTopic = sortCardsByNewest(cards).map((card) => ({
           ...card,
           topic: inferTopic(card),
         }));
@@ -82,7 +81,9 @@ export default function News() {
         setTechNews(cardsWithTopic);
         setHasMore((stories || []).length === STORIES_PAGE_SIZE);
         setOffset((stories || []).length);
-        setSourcesCount(Array.isArray(sources) ? sources.length : 0);
+        setTotalStories(
+          Number.isFinite(countResp?.total) ? countResp.total : 0,
+        );
       } catch (loadError) {
         if (cancelled) return;
         setError(loadError.message || "Failed to fetch tech news");
@@ -116,26 +117,26 @@ export default function News() {
     return techNews.filter((story) => story.topic === activeFilter);
   }, [activeFilter, techNews]);
 
-  async function handleLoadMore() {
-    if (loadingMore || !hasMore) return;
+  const handleLoadMore = useCallback(async function handleLoadMore() {
+    if (loadingMore || !hasMore || loading) return;
 
     setLoadingMore(true);
     setError("");
 
     try {
       const [stories, trendingStories] = await Promise.all([
-        newsApi.getStories({ limit: STORIES_PAGE_SIZE, offset }),
+        newsApi.getStories({
+          limit: STORIES_PAGE_SIZE,
+          offset,
+          includeLead: true,
+        }),
         newsApi.getTrendingStories().catch(() => []),
       ]);
 
-      const rankedStories = sortStoriesByClicks(
-        stories || [],
-        trendingStories || [],
-      );
       const trendingIds = new Set(
         (trendingStories || []).map((story) => story.id),
       );
-      const cards = await buildStoryCards(rankedStories, trendingIds);
+      const cards = await buildStoryCards(stories || [], trendingIds);
       const cardsWithTopic = cards.map((card) => ({
         ...card,
         topic: inferTopic(card),
@@ -147,7 +148,7 @@ export default function News() {
           (item, index, arr) =>
             arr.findIndex((x) => x.id === item.id) === index,
         );
-        return deduped;
+        return sortCardsByNewest(deduped);
       });
 
       setHasMore((stories || []).length === STORIES_PAGE_SIZE);
@@ -157,7 +158,30 @@ export default function News() {
     } finally {
       setLoadingMore(false);
     }
-  }
+  }, [hasMore, loading, loadingMore, offset]);
+
+  // Infinite scroll: load the next page as the sentinel nears the viewport.
+  // `rootMargin` starts the fetch before the reader reaches the end, so the
+  // feed keeps flowing instead of stalling at each page boundary.
+  const sentinelRef = useRef(null);
+
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node || view !== "tech") return undefined;
+    if (!hasMore || loading) return undefined;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          handleLoadMore();
+        }
+      },
+      { rootMargin: "600px 0px" },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [handleLoadMore, hasMore, loading, view]);
 
   return (
     <div className="page-enter page-content">
@@ -195,7 +219,7 @@ export default function News() {
               className={`news-toggle-btn ${view === "tech" ? "active" : ""}`}
               onClick={() => setView("tech")}
             >
-              // TECH NEWS
+              TECH NEWS
             </button>
             <button
               type="button"
@@ -204,49 +228,20 @@ export default function News() {
               className={`news-toggle-btn ${view === "campus" ? "active" : ""}`}
               onClick={() => setView("campus")}
             >
-              // CAMPUS PULSE
+              CAMPUS PULSE
             </button>
           </div>
         </div>
 
         {view === "tech" ? (
           <>
-            <TerminalWindow
-              title="news-scraper@feed:~$"
-              className="news-terminal"
-            >
-              <div className="terminal-line">
-                <span className="prompt">
-                  $ curl -s api.techpulse.dev/news | jq '.latest[:6]'
-                </span>
-              </div>
-              <div className="terminal-line">
-                <span className="output dim">Fetching latest articles...</span>
-              </div>
-              <div className="terminal-line">
-                <span className="output green">
-                  {loading
-                    ? "SYNC in progress..."
-                    : `OK ${techNews.length} stor${techNews.length === 1 ? "y" : "ies"} ready`}
-                  {!loading && ` across ${sourcesCount || "multiple"} sources`}
-                </span>
-              </div>
-              <div className="terminal-line">
-                <span className="output dim">filter={activeFilter}</span>
-              </div>
-              <div className="terminal-line">
-                <span className="prompt">$ </span>
-                <span className="terminal-cursor" />
-              </div>
-            </TerminalWindow>
-
             <section
               className="news-filter-panel"
               aria-labelledby="news-filter-heading"
             >
               <div className="news-filter-header">
                 <p id="news-filter-heading" className="news-filter-label">
-                  // FILTER THE FEED
+                  FILTER FEED
                 </p>
                 <span className="news-filter-count">
                   {loading ? "syncing..." : `${filteredNews.length} visible`}
@@ -296,11 +291,24 @@ export default function News() {
                           <span className="tag tag--blue">{news.topic}</span>
                           <span className="tag tag--dim">{news.category}</span>
                         </div>
-                        <span className="news-id">
-                          NS_{String(index + 1).padStart(2, "0")}
-                        </span>
                       </div>
-                      <h2 className="news-full-title">{news.title}</h2>
+                      <h2 className="news-full-title">
+                        {news.url && news.url !== "#" ? (
+                          <a
+                            href={news.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="news-card-title-link"
+                            onClick={() => {
+                              newsApi.trackStoryClick(news.id);
+                            }}
+                          >
+                            {news.title}
+                          </a>
+                        ) : (
+                          news.title
+                        )}
+                      </h2>
                       <p className="news-full-desc">{news.description}</p>
                       <div className="news-full-footer">
                         <div className="news-source-info">
@@ -326,24 +334,40 @@ export default function News() {
                   ))}
                 </div>
 
-                {activeFilter === "ALL" && hasMore ? (
+                {hasMore ? (
+                  <>
+                    <div ref={sentinelRef} aria-hidden="true" />
+                    <div
+                      className="card news-empty-state"
+                      style={{ marginTop: "1rem" }}
+                    >
+                      <button
+                        type="button"
+                        className="news-read-more"
+                        onClick={handleLoadMore}
+                        disabled={loadingMore}
+                        style={{
+                          border: "none",
+                          background: "transparent",
+                          cursor: "pointer",
+                        }}
+                      >
+                        {loadingMore
+                          ? `LOADING MORE... (${techNews.length}${totalStories ? `/${totalStories}` : ""} scanned)`
+                          : activeFilter === "ALL"
+                            ? `LOAD MORE STORIES (${techNews.length}${totalStories ? `/${totalStories}` : ""}) ->`
+                            : `LOAD MORE ${activeFilter} STORIES (${filteredNews.length} of ${techNews.length}${totalStories ? `/${totalStories}` : ""} scanned) ->`}
+                      </button>
+                    </div>
+                  </>
+                ) : techNews.length > 0 ? (
                   <div
                     className="card news-empty-state"
                     style={{ marginTop: "1rem" }}
                   >
-                    <button
-                      type="button"
-                      className="news-read-more"
-                      onClick={handleLoadMore}
-                      disabled={loadingMore}
-                      style={{
-                        border: "none",
-                        background: "transparent",
-                        cursor: "pointer",
-                      }}
-                    >
-                      {loadingMore ? "LOADING MORE..." : "LOAD MORE STORIES ->"}
-                    </button>
+                    {activeFilter === "ALL"
+                      ? `End of feed - all ${techNews.length} tech stories loaded.`
+                      : `End of feed - ${filteredNews.length} ${activeFilter} stories out of ${techNews.length} scanned.`}
                   </div>
                 ) : null}
               </div>

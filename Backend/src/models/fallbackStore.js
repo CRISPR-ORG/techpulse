@@ -1,12 +1,163 @@
 const crypto = require("crypto");
+const fs = require("fs");
+const fsPromises = require("fs/promises");
+const path = require("path");
 
+const STORE_FILE = path.join(__dirname, "../../.cache/local-store.json");
+const PERSIST_DEBOUNCE_MS = 1500;
+
+// The RSS/NewsAPI worker inserts ~90 articles every run, so aggregated news is
+// capped to keep the snapshot small. Admin-published content is never evicted.
+const MAX_FEED_ARTICLES = 500;
+
+/**
+ * Active data store used whenever Supabase is unavailable.
+ *
+ * State is mirrored to disk so admin-published Campus Pulse posts survive a
+ * restart. Without this, anything an admin publishes is lost when the process
+ * exits, which makes the admin portal effectively useless until the Supabase
+ * migrations in `supabase/sql/` have been run.
+ */
 class FallbackStore {
-  constructor() {
+  constructor({ persist = true } = {}) {
     this.sources = new Map(); // id -> source
     this.stories = new Map(); // id -> story
     this.articles = new Map(); // id -> article
     this.clicks = []; // array of { id, story_id, clicked_at }
     this.clickCounter = 1;
+
+    this.persistEnabled = persist;
+    this.persistTimer = null;
+    this.persistInFlight = null;
+
+    if (this.persistEnabled) {
+      this.loadFromDisk();
+    }
+  }
+
+  // ── Persistence ──
+
+  loadFromDisk() {
+    try {
+      if (!fs.existsSync(STORE_FILE)) return;
+
+      const parsed = JSON.parse(fs.readFileSync(STORE_FILE, "utf8"));
+
+      for (const source of parsed.sources || []) {
+        if (source?.id) this.sources.set(source.id, source);
+      }
+      for (const story of parsed.stories || []) {
+        if (story?.id) this.stories.set(story.id, story);
+      }
+      for (const article of parsed.articles || []) {
+        if (article?.id) this.articles.set(article.id, article);
+      }
+
+      this.clicks = Array.isArray(parsed.clicks) ? parsed.clicks : [];
+      this.clickCounter =
+        this.clicks.reduce((max, click) => Math.max(max, click?.id || 0), 0) + 1;
+
+      const adminPosts = [...this.articles.values()].filter(
+        (article) => article.is_admin_post,
+      ).length;
+
+      console.log(
+        `[LocalStore] Restored ${this.stories.size} stories, ${this.articles.size} articles (${adminPosts} admin-published)`,
+      );
+    } catch (err) {
+      console.error("[LocalStore] Load failed:", err.message || err);
+    }
+  }
+
+  schedulePersist() {
+    if (!this.persistEnabled) return;
+
+    if (this.persistTimer) {
+      clearTimeout(this.persistTimer);
+    }
+
+    this.persistTimer = setTimeout(() => {
+      this.persistTimer = null;
+      this.flush().catch((err) =>
+        console.error("[LocalStore] Persist failed:", err.message || err),
+      );
+    }, PERSIST_DEBOUNCE_MS);
+
+    // A pending snapshot must not hold the process open.
+    if (typeof this.persistTimer.unref === "function") {
+      this.persistTimer.unref();
+    }
+  }
+
+  async flush() {
+    if (!this.persistEnabled) return false;
+
+    // Serialize writes so two flushes cannot interleave on the same file.
+    if (this.persistInFlight) {
+      await this.persistInFlight;
+    }
+
+    this.persistInFlight = (async () => {
+      this.pruneFeedArticles();
+
+      const snapshot = {
+        version: 1,
+        savedAt: new Date().toISOString(),
+        sources: [...this.sources.values()],
+        stories: [...this.stories.values()],
+        articles: [...this.articles.values()],
+        clicks: this.clicks.slice(-5000),
+      };
+
+      await fsPromises.mkdir(path.dirname(STORE_FILE), { recursive: true });
+
+      // Write-then-rename keeps the snapshot readable if the process dies mid-write.
+      const tempFile = `${STORE_FILE}.tmp`;
+      await fsPromises.writeFile(tempFile, JSON.stringify(snapshot), "utf8");
+      await fsPromises.rename(tempFile, STORE_FILE);
+
+      return true;
+    })();
+
+    try {
+      return await this.persistInFlight;
+    } finally {
+      this.persistInFlight = null;
+    }
+  }
+
+  /**
+   * Drop the oldest aggregated news once past the cap.
+   * Admin posts and the stories they belong to are always kept.
+   */
+  pruneFeedArticles() {
+    const feedArticles = [...this.articles.values()]
+      .filter((article) => !article.is_admin_post)
+      .sort(
+        (a, b) =>
+          new Date(b.published_at || 0) - new Date(a.published_at || 0),
+      );
+
+    if (feedArticles.length <= MAX_FEED_ARTICLES) return;
+
+    for (const article of feedArticles.slice(MAX_FEED_ARTICLES)) {
+      this.articles.delete(article.id);
+    }
+
+    // Remove stories that no longer have any article attached.
+    const referencedStoryIds = new Set(
+      [...this.articles.values()].map((article) => article.story_id),
+    );
+
+    for (const [storyId, story] of this.stories) {
+      if (referencedStoryIds.has(storyId)) continue;
+      if (story.category === "campus-pulse") continue;
+      this.stories.delete(storyId);
+    }
+
+    this.clicks = this.clicks.filter((click) =>
+      this.stories.has(click.story_id),
+    );
   }
 
   // Sources
@@ -30,6 +181,7 @@ class FallbackStore {
       created_at: new Date().toISOString(),
     };
     this.sources.set(id, source);
+    this.schedulePersist();
     return id;
   }
 
@@ -74,6 +226,7 @@ class FallbackStore {
     };
 
     this.stories.set(id, story);
+    this.schedulePersist();
     return id;
   }
 
@@ -91,6 +244,48 @@ class FallbackStore {
     return list.slice(offset, offset + limit);
   }
 
+  /**
+   * Newest article timestamp per story, computed in one pass.
+   * Used to order the feed by publication time rather than ingest time.
+   */
+  getStoryRecencyMap() {
+    const recency = new Map();
+
+    for (const article of this.articles.values()) {
+      const at = Date.parse(article.published_at || article.created_at || "");
+      if (Number.isNaN(at)) continue;
+
+      const current = recency.get(article.story_id);
+      if (current === undefined || at > current) {
+        recency.set(article.story_id, at);
+      }
+    }
+
+    return recency;
+  }
+
+  getStoryById(storyId) {
+    return this.stories.get(storyId) || null;
+  }
+
+  /**
+   * Remove a story that has no articles attached.
+   * Used to clean up after a rejected publish so the Campus Pulse feed does
+   * not show a titled entry with no content behind it.
+   */
+  deleteStoryIfEmpty(storyId) {
+    if (!this.stories.has(storyId)) return false;
+
+    for (const article of this.articles.values()) {
+      if (article.story_id === storyId) return false;
+    }
+
+    this.stories.delete(storyId);
+    this.clicks = this.clicks.filter((click) => click.story_id !== storyId);
+    this.schedulePersist();
+    return true;
+  }
+
   updateStorySourcesCount(storyId) {
     const story = this.stories.get(storyId);
     if (!story) return false;
@@ -104,11 +299,21 @@ class FallbackStore {
 
     story.sources_count = uniqueSources.size;
     story.updated_at = new Date().toISOString();
+    this.schedulePersist();
     return true;
   }
 
   // Articles
   insertArticle(article, storyId) {
+    const id = this.createArticle(article, storyId);
+    return id;
+  }
+
+  /**
+   * Shared insert used by both the news worker and the admin portal.
+   * Returns the article id, or null when the URL already exists.
+   */
+  createArticle(article, storyId, { publishedByAdminId = null } = {}) {
     const url = String(article.url || "").trim();
     if (!url) return null;
 
@@ -129,10 +334,41 @@ class FallbackStore {
       image_url: article.image_url || null,
       published_at: article.published_at || new Date().toISOString(),
       created_at: new Date().toISOString(),
+      published_by_admin_id: publishedByAdminId,
+      is_admin_post: Boolean(publishedByAdminId),
     };
 
     this.articles.set(id, newArticle);
+    this.schedulePersist();
     return id;
+  }
+
+  /**
+   * Publish an admin-authored article and return the full row,
+   * matching what the Supabase insert returns.
+   */
+  insertAdminArticle(article, storyId, adminId) {
+    const id = this.createArticle(article, storyId, {
+      publishedByAdminId: adminId,
+    });
+
+    if (!id) return null;
+
+    // Admin posts must reach disk immediately, not on the debounce.
+    this.flush().catch((err) =>
+      console.error("[LocalStore] Admin persist failed:", err.message || err),
+    );
+
+    return this.articles.get(id) || null;
+  }
+
+  getAdminArticles(adminId, limit = 20, offset = 0) {
+    if (!adminId) return [];
+
+    return Array.from(this.articles.values())
+      .filter((article) => article.published_by_admin_id === adminId)
+      .sort((a, b) => new Date(b.published_at) - new Date(a.published_at))
+      .slice(offset, offset + limit);
   }
 
   getArticlesByStoryId(storyId, limit = 50, offset = 0) {
@@ -167,6 +403,7 @@ class FallbackStore {
       story_id: storyId,
       clicked_at: new Date().toISOString(),
     });
+    this.schedulePersist();
     return id;
   }
 

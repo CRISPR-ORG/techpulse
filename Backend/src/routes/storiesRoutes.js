@@ -1,6 +1,7 @@
 const express = require("express");
 const {
   getStories,
+  getStoriesCount,
   getTrendingStories,
   getStoriesByCategory,
   getCampusPulseStories,
@@ -11,6 +12,7 @@ const {
 const router = express.Router();
 
 router.get("/", getStories);
+router.get("/count", getStoriesCount);
 router.get("/trending", getTrendingStories);
 router.get("/campus-pulse", getCampusPulseStories);
 router.get("/category/:category", getStoriesByCategory);

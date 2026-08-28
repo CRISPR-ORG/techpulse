@@ -11,6 +11,7 @@ function normalizeOpportunity(opp) {
     mode: String(opp?.mode || "ON-SITE").toUpperCase(),
     tags: Array.isArray(opp?.tags) ? opp.tags : [],
     applyUrl: opp?.applyUrl || "#",
+    source: opp?.source || "",
   };
 }
 
@@ -104,8 +105,8 @@ export default function Opportunities() {
             opportunities. <span className="highlight">grab them.</span>
           </h1>
           <p className="page-desc">
-            Internships, full-time roles, freelance gigs - curated for builders
-            who ship.
+            Live tech roles pulled daily from Remotive, Jobicy, Arbeitnow,
+            Himalayas and Remote OK - filtered down to engineering only.
           </p>
         </div>
 
@@ -157,7 +158,10 @@ export default function Opportunities() {
                   </div>
                   <div className="opp-company">
                     <span className="opp-company-name">{opp.company}</span>
-                    <span className="opp-location">{opp.location}</span>
+                    <span className="opp-location">
+                      {opp.location}
+                      {opp.source ? ` · via ${opp.source}` : ""}
+                    </span>
                   </div>
                   <span className="opp-stipend">{opp.stipend}</span>
                   <span className="opp-deadline">{opp.deadline}</span>
@@ -173,7 +177,12 @@ export default function Opportunities() {
                       {opp.mode}
                     </span>
                   </div>
-                  <a href={opp.applyUrl} className="opp-apply">
+                  <a
+                    href={opp.applyUrl}
+                    className="opp-apply"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
                     {"APPLY ->"}
                   </a>
                 </div>
@@ -228,6 +237,7 @@ export default function Opportunities() {
                   <h3 className="opp-card-role">{opp.role}</h3>
                   <p className="opp-card-company">
                     {opp.company} - {opp.location}
+                    {opp.source ? ` · via ${opp.source}` : ""}
                   </p>
                   <div className="opp-card-meta">
                     <span className="opp-card-stipend">{opp.stipend}</span>
@@ -245,6 +255,8 @@ export default function Opportunities() {
                   <a
                     href={opp.applyUrl}
                     className="btn btn--green opp-card-apply"
+                    target="_blank"
+                    rel="noreferrer"
                   >
                     <span>// APPLY</span>
                   </a>

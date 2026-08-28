@@ -5,6 +5,7 @@ const {
 } = require("../models");
 const { getJSON, setJSON } = require("../services/cache/cacheService");
 const { cacheKeys, CACHE_TTL } = require("../services/cache/cacheKeys");
+const { cleanDescription } = require("../services/utils/sanitizeText");
 
 const CAMPUS_PULSE_CATEGORY = "campus-pulse";
 
@@ -25,11 +26,51 @@ function normalizeCategory(value) {
     .replace(/\s+/g, "-");
 }
 
+/**
+ * Attach each story's most recent article as `lead_article`.
+ *
+ * Without this the browser has to issue one request per story to render a
+ * card, which is a request per row on a feed meant to show every story.
+ */
+async function attachLeadArticles(stories) {
+  const items = await Promise.all(
+    stories.map(async (story) => {
+      try {
+        const articles = await articlesService.getArticlesByStoryId(
+          story.id,
+          1,
+          0,
+        );
+        const lead = articles[0];
+        if (!lead || !lead.url || lead.url === "#") {
+          return null;
+        }
+
+        return {
+          ...story,
+          lead_article: {
+            ...lead,
+            description: cleanDescription(lead.description),
+          },
+        };
+      } catch {
+        return null;
+      }
+    }),
+  );
+  return items.filter(Boolean);
+}
+
 async function getStories(req, res) {
   try {
     const limit = toPositiveInt(req.query.limit, 20);
     const offset = toNonNegativeInt(req.query.offset, 0);
-    const key = cacheKeys.stories({ category: "all", limit, offset });
+    const withLead = String(req.query.include || "") === "lead";
+    const key = cacheKeys.stories({
+      category: withLead ? "all-lead" : "all",
+      limit,
+      offset,
+    });
 
     const cached = await getJSON(key);
     if (cached !== null) {
@@ -37,8 +78,23 @@ async function getStories(req, res) {
     }
 
     const stories = await storiesService.getStories(null, limit, offset);
-    await setJSON(key, stories, CACHE_TTL.STORIES);
-    res.json(stories);
+    const payload = withLead ? await attachLeadArticles(stories) : stories;
+
+    await setJSON(key, payload, CACHE_TTL.STORIES);
+    res.json(payload);
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+}
+
+/**
+ * Total number of tech stories, so the feed can show a real count rather
+ * than guessing the end of the list from a short page.
+ */
+async function getStoriesCount(req, res) {
+  try {
+    const total = await storiesService.countStories(null);
+    res.json({ total });
   } catch (err) {
     res.status(500).json({ error: "Server error" });
   }
@@ -103,8 +159,24 @@ async function getCampusPulseStories(req, res) {
       limit,
       offset,
     );
-    await setJSON(key, stories, CACHE_TTL.STORIES);
-    return res.json(stories);
+
+    // Only publish entries that actually have an article attached, so a
+    // half-written story never renders as an empty bulletin.
+    const withArticles = (
+      await Promise.all(
+        stories.map(async (story) => {
+          const articles = await articlesService.getArticlesByStoryId(
+            story.id,
+            1,
+            0,
+          );
+          return articles.length > 0 ? story : null;
+        }),
+      )
+    ).filter(Boolean);
+
+    await setJSON(key, withArticles, CACHE_TTL.STORIES);
+    return res.json(withArticles);
   } catch (err) {
     return res.status(500).json({ error: "Server error" });
   }
@@ -149,6 +221,7 @@ async function getStoryById(req, res) {
 
 module.exports = {
   getStories,
+  getStoriesCount,
   getTrendingStories,
   getStoriesByCategory,
   getCampusPulseStories,

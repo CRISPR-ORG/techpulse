@@ -81,13 +81,18 @@ function toTimestamp(value) {
 }
 
 export const newsApi = {
-  getStories({ limit = 20, offset = 0 } = {}) {
+  getStories({ limit = 20, offset = 0, includeLead = false } = {}) {
     return apiRequest(
       buildPathWithQuery("/stories", {
         limit,
         offset,
+        include: includeLead ? "lead" : undefined,
       }),
     );
+  },
+
+  getStoriesCount() {
+    return apiRequest("/stories/count");
   },
 
   getCampusPulseStories({ limit = 20, offset = 0 } = {}) {
@@ -148,6 +153,12 @@ export const listingsApi = {
   },
 };
 
+export const openSourceApi = {
+  getOpportunities() {
+    return apiRequest("/github-opportunities");
+  },
+};
+
 export const adminApi = {
   login(username, password) {
     return apiRequest("/admin/login", {
@@ -204,40 +215,83 @@ function toRelativeTime(isoValue) {
   return `${diffDays}d ago`;
 }
 
+export function truncateDescription(value, maxLength = 180) {
+  if (!value || typeof value !== "string") return "";
+  const cleaned = value.trim().replace(/\s+/g, " ");
+  if (cleaned.length <= maxLength) return cleaned;
+
+  const truncated = cleaned.slice(0, maxLength);
+  const lastSpace = truncated.lastIndexOf(" ");
+  const boundary =
+    lastSpace > maxLength * 0.7 ? truncated.slice(0, lastSpace) : truncated;
+  return `${boundary.trim()}...`;
+}
+
 export async function buildStoryCards(stories, trendingIds = new Set()) {
   const cards = await Promise.all(
     (stories || []).map(async (story, index) => {
-      let leadArticle = null;
+      // `lead_article` is inlined by /stories?include=lead. Only fall back to a
+      // per-story request when the caller did not ask for it.
+      let leadArticle = story.lead_article || null;
 
-      try {
-        const articles = await newsApi.getStoryArticles(story.id);
-        if (Array.isArray(articles) && articles.length > 0) {
-          leadArticle = articles[0];
+      if (!leadArticle && !("lead_article" in story)) {
+        try {
+          const articles = await newsApi.getStoryArticles(story.id);
+          if (Array.isArray(articles) && articles.length > 0) {
+            leadArticle = articles[0];
+          }
+        } catch {
+          leadArticle = null;
         }
-      } catch {
-        leadArticle = null;
+      }
+
+      const sourceName = String(leadArticle?.source_name || "").trim();
+      const articleUrl = String(leadArticle?.url || "").trim();
+
+      // Only display news stories where a real source is available
+      const hasValidSource = Boolean(
+        sourceName &&
+        sourceName !== "0 sources" &&
+        sourceName.toLowerCase() !== "unknown" &&
+        articleUrl &&
+        articleUrl !== "#" &&
+        !articleUrl.startsWith("javascript:")
+      );
+
+      if (!hasValidSource) {
+        return null;
       }
 
       const isTrending = trendingIds.has(story.id);
       const tag = isTrending ? "TRENDING" : index < 2 ? "BREAKING" : "NEW";
+      const publishedAt = leadArticle?.published_at || story.created_at;
+      const rawDescription = leadArticle?.description || "";
+      const description =
+        truncateDescription(rawDescription, 180) ||
+        "Click to read full story coverage.";
 
       return {
         id: story.id,
         category: story.category || "GENERAL",
         tag,
         title: story.title,
-        source:
-          leadArticle?.source_name || `${story.sources_count || 0} sources`,
-        time: toRelativeTime(leadArticle?.published_at || story.created_at),
-        description:
-          leadArticle?.description ||
-          "Open the story to view all source coverage.",
-        url: leadArticle?.url || "#",
+        source: sourceName,
+        publishedAt,
+        time: toRelativeTime(publishedAt),
+        description,
+        url: articleUrl,
       };
     }),
   );
 
-  return cards;
+  return cards.filter(Boolean);
+}
+
+/** Newest first, by the timestamp each card actually displays. */
+export function sortCardsByNewest(cards = []) {
+  return [...cards].sort(
+    (a, b) => toTimestamp(b.publishedAt) - toTimestamp(a.publishedAt),
+  );
 }
 
 export function sortStoriesByClicks(stories = [], trendingStories = []) {

@@ -135,10 +135,15 @@ function runLine(line, navigate, location, liveCounts) {
       tick.forEach((t) => lines.push(`  -> ${t}`));
     }
     lines.push("");
+    const campus = liveCounts?.campusPulseItems || [];
     lines.push("CAMPUS (high priority):");
-    lines.push("  (no live campus newsletter data)");
+    if (!campus.length) {
+      lines.push("  (no campus bulletins published yet)");
+    } else {
+      campus.forEach((title) => lines.push(`  -> ${title}`));
+    }
     lines.push("");
-    lines.push("Tip: toggle Campus Pulse inside Tech News page.");
+    lines.push("Tip: `cd campus` for the full Campus Hub newsletter.");
     return { type: "text", ok: true, lines };
   }
 
@@ -208,6 +213,7 @@ export default function NavTerminal() {
     campusPulse: 0,
     opportunities: 0,
     tickerItems: [],
+    campusPulseItems: [],
   });
   const panelRef = useRef(null);
   const inputRef = useRef(null);
@@ -218,18 +224,24 @@ export default function NavTerminal() {
 
     async function syncStatusCounts() {
       try {
-        const [stories, sources, opportunitiesResp] = await Promise.all([
-          newsApi.getStories(),
-          newsApi.getSources(),
-          listingsApi.getOpportunities().catch(() => []),
-        ]);
+        const [stories, sources, opportunitiesResp, campusPulseResp] =
+          await Promise.all([
+            newsApi.getStories(),
+            newsApi.getSources(),
+            listingsApi.getOpportunities().catch(() => []),
+            newsApi.getCampusPulseStories({ limit: 20 }).catch(() => []),
+          ]);
 
         if (cancelled) return;
+
+        const campusPulseStories = Array.isArray(campusPulseResp)
+          ? campusPulseResp
+          : [];
 
         setLiveCounts({
           techStories: Array.isArray(stories) ? stories.length : 0,
           sources: Array.isArray(sources) ? sources.length : 0,
-          campusPulse: 0,
+          campusPulse: campusPulseStories.length,
           opportunities: Array.isArray(opportunitiesResp)
             ? opportunitiesResp.length
             : 0,
@@ -239,6 +251,10 @@ export default function NavTerminal() {
                 .map((story) => story.title)
                 .filter(Boolean)
             : [],
+          campusPulseItems: campusPulseStories
+            .slice(0, 5)
+            .map((story) => story.title)
+            .filter(Boolean),
         });
       } catch {
         // Keep fallback values if backend is unavailable.

@@ -60,6 +60,34 @@ export default function Navbar() {
               </Link>
             </div>
           </div>
+
+          <div className="nav-dropdown">
+            <span
+              className={`nav-link ${
+                ["/campus-pulse", "/fests", "/clubs", "/feed"].includes(
+                  location.pathname,
+                )
+                  ? "active"
+                  : ""
+              }`}
+            >
+              CAMPUS HUB ▾
+            </span>
+            <div className="dropdown-menu">
+              <Link to="/campus-pulse" className="dropdown-item">
+                Campus Pulse
+              </Link>
+              <Link to="/fests" className="dropdown-item">
+                Fests
+              </Link>
+              <Link to="/clubs" className="dropdown-item">
+                Clubs
+              </Link>
+              <Link to="/feed" className="dropdown-item">
+                Feed
+              </Link>
+            </div>
+          </div>
         </div>
 
         <NavTerminal />

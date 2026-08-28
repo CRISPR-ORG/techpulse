@@ -6,10 +6,7 @@ export default function Footer() {
   return (
     <footer className="footer" id="footer">
       <div className="container">
-        <div className="footer-terminal">
-          <span className="footer-prompt">$</span>
-          <span className="footer-cmd"> echo "Built by the TechPulse crew" | campus --deploy</span>
-        </div>
+
 
         <div className="footer-grid">
           <div className="footer-col">
@@ -22,27 +19,6 @@ export default function Footer() {
               Your one-stop terminal for everything tech on campus. 
               News, hackathons, opportunities, fests, and more.
             </p>
-          </div>
-
-          <div className="footer-col">
-            <h4 className="footer-heading">// NAVIGATE</h4>
-            <ul className="footer-links">
-              <li><a href="/news">Tech News</a></li>
-              <li><a href="/hackathons">Hackathons</a></li>
-              <li><a href="/opportunities">Opportunities</a></li>
-              <li><a href="/admin">Admin Console</a></li>
-              <li><a href="/clubs">Clubs</a></li>
-            </ul>
-          </div>
-
-          <div className="footer-col">
-            <h4 className="footer-heading">// CONNECT</h4>
-            <ul className="footer-links">
-              <li><a href="#">GitHub</a></li>
-              <li><a href="#">X (Twitter)</a></li>
-              <li><a href="#">Discord</a></li>
-              <li><a href="#">Instagram</a></li>
-            </ul>
           </div>
 
           <div className="footer-col">
@@ -69,6 +45,10 @@ export default function Footer() {
         </div>
 
         <div className="footer-bottom">
+          <div className="footer-built-by">
+            <img src="/crispr.png" alt="Crispr Logo" className="footer-crispr-logo" />
+            <span className="footer-built-text">Build by Crispr</span>
+          </div>
           <span className="footer-copy">© 2026 TechPulse. All systems nominal.</span>
           <span className="footer-pid">PID: {FOOTER_PID}</span>
         </div>

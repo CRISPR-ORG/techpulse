@@ -1,0 +1,149 @@
+/* ═══════════════════════════════════════════════════════════
+   OPEN SOURCE PAGE
+   ═══════════════════════════════════════════════════════════ */
+
+.os-toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-xl);
+  margin-bottom: var(--space-2xl);
+  flex-wrap: wrap;
+}
+
+.os-toggle {
+  display: inline-flex;
+  flex-wrap: wrap;
+  border: 1px solid var(--border-primary);
+  background: var(--bg-card);
+}
+
+.os-toggle-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  padding: 10px 14px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.os-toggle-btn.active {
+  color: var(--bg-primary);
+  background: var(--green);
+  box-shadow: var(--shadow-glow-green);
+}
+
+.os-toggle-btn:hover {
+  color: var(--text-primary);
+}
+
+.os-toggle-btn.active:hover {
+  color: var(--bg-primary);
+}
+
+/* Language filter */
+.os-lang-filter {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.os-lang-btn {
+  appearance: none;
+  background: transparent;
+  border: 1px solid var(--border-primary);
+  color: var(--text-dim);
+  padding: 6px 10px;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.os-lang-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--border-hover);
+}
+
+.os-lang-btn.active {
+  color: var(--green);
+  border-color: var(--border-green);
+  background: var(--green-glow);
+}
+
+/* Cards */
+.os-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.os-card-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.os-card-title {
+  font-size: 1.05rem;
+  line-height: 1.4;
+  color: var(--text-heading);
+  /* Titles vary wildly in length; this keeps the CTA row aligned across a row
+     of cards without truncating the text itself. */
+  flex-grow: 1;
+}
+
+.os-repo-desc {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  flex-grow: 1;
+}
+
+.os-labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.os-label {
+  opacity: 0.85;
+}
+
+.os-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 1px;
+}
+
+.os-card-cta {
+  align-self: flex-start;
+  margin-top: auto;
+}
+
+.os-state {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
+@media (max-width: 640px) {
+  .os-toggle-row {
+    align-items: flex-start;
+    gap: var(--space-md);
+  }
+}

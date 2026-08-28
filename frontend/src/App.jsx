@@ -3,6 +3,7 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
+  Navigate,
   useLocation,
 } from "react-router-dom";
 import LoadingScreen from "./components/LoadingScreen";
@@ -61,7 +62,9 @@ function AppContent() {
         <Route path="/fests" element={<Fests />} />
         <Route path="/clubs" element={<Clubs />} />
         <Route path="/feed" element={<Feed />} />
-        <Route path="/admin" element={<Admin />} />
+        {/* /campus-admin is the Campus Pulse publishing portal. */}
+        <Route path="/campus-admin" element={<Admin />} />
+        <Route path="/admin" element={<Navigate to="/campus-admin" replace />} />
       </Routes>
       <Footer />
     </div>

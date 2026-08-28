@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const { adminService, storiesService } = require("../models");
 const { deleteByPattern } = require("../services/cache/cacheService");
 const { JWT_SECRET } = require("../middleware/adminAuth");
+const { runDailyDigest } = require("../jobs/dailyDigest");
 
 const CAMPUS_PULSE_CATEGORY = "campus-pulse";
 
@@ -162,6 +163,10 @@ async function publishAdminNews(req, res) {
     );
 
     if (!article) {
+      // The story row was created before the article, so drop it again —
+      // otherwise a rejected publish leaves an empty entry in Campus Pulse.
+      await storiesService.deleteStoryIfEmpty(storyId);
+
       return res
         .status(409)
         .json({ error: "Unable to publish news. URL may already exist." });
@@ -198,8 +203,37 @@ async function getMyPublishedNews(req, res) {
   }
 }
 
+/**
+ * Send the daily digest on demand. `?dryRun=true` renders the email and
+ * returns it without sending, which is the safe way to preview content.
+ */
+async function sendDigestNow(req, res) {
+  try {
+    const dryRun = String(req.query.dryRun || "") === "true";
+    const result = await runDailyDigest({ dryRun });
+
+    if (!result.ok) {
+      return res.status(502).json({
+        error: result.error || "Digest send failed",
+        storyCount: result.count ?? 0,
+      });
+    }
+
+    return res.json({
+      message: dryRun ? "Digest preview generated" : "Digest sent",
+      storyCount: result.count ?? 0,
+      subject: result.subject,
+      emailId: result.id || null,
+      ...(dryRun ? { html: result.html, text: result.text } : {}),
+    });
+  } catch (err) {
+    return res.status(500).json({ error: "Server error" });
+  }
+}
+
 module.exports = {
   adminLogin,
+  sendDigestNow,
   getAdminMe,
   publishAdminNews,
   getMyPublishedNews,

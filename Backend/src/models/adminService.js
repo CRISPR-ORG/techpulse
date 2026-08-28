@@ -1,4 +1,14 @@
-const { supabase } = require("../config/supabaseClient");
+const { supabase, isDatabaseReady } = require("../config/supabaseClient");
+const { fallbackStore } = require("./fallbackStore");
+
+// Campus Pulse admin credentials. Env vars win so deployments can rotate them
+// without a code change; the defaults keep the portal usable out of the box.
+const DEFAULT_ADMIN_USERNAME = "crisprisbest";
+const DEFAULT_ADMIN_PASSWORD = "youcan'tseeme";
+
+// A stable UUID lets the env-configured admin own articles the same way a
+// database-backed admin does, both in Supabase and in the local store.
+const ENV_ADMIN_ID = "a0000000-0000-4000-8000-000000000001";
 
 function normalizeIdentifier(value) {
   return String(value || "")
@@ -13,9 +23,10 @@ function isUuid(value) {
 }
 
 function getConfiguredAdmin() {
-  const username = normalizeIdentifier(process.env.ADMIN_USERNAME);
+  const username =
+    normalizeIdentifier(process.env.ADMIN_USERNAME) || DEFAULT_ADMIN_USERNAME;
   const email = normalizeIdentifier(process.env.ADMIN_EMAIL);
-  const password = String(process.env.ADMIN_PASSWORD || "");
+  const password = process.env.ADMIN_PASSWORD || DEFAULT_ADMIN_PASSWORD;
 
   if ((!username && !email) || !password) return null;
 
@@ -23,7 +34,7 @@ function getConfiguredAdmin() {
     username,
     email,
     password,
-    id: process.env.ADMIN_FALLBACK_ID || "env-admin",
+    id: process.env.ADMIN_FALLBACK_ID || ENV_ADMIN_ID,
     role: "admin",
   };
 }
@@ -31,6 +42,7 @@ function getConfiguredAdmin() {
 async function findAdminByIdentifier(identifier) {
   const normalized = normalizeIdentifier(identifier);
   if (!normalized) return null;
+  if (!(await isDatabaseReady())) return null;
 
   let byUsername = null;
   const usernameResult = await supabase
@@ -71,30 +83,32 @@ async function verifyAdminLogin(identifier, password) {
   try {
     const normalizedIdentifier = normalizeIdentifier(identifier);
 
-    // Preferred RPC signature (username/email identifier)
-    let { data, error } = await supabase.rpc("verify_admin_login", {
-      p_identifier: normalizedIdentifier,
-      p_password: password,
-    });
-
-    // Backward-compatible fallback for older SQL function signature
-    if (error) {
-      const fallbackResult = await supabase.rpc("verify_admin_login", {
-        p_email: normalizedIdentifier,
+    if (await isDatabaseReady()) {
+      // Preferred RPC signature (username/email identifier)
+      let { data, error } = await supabase.rpc("verify_admin_login", {
+        p_identifier: normalizedIdentifier,
         p_password: password,
       });
 
-      data = fallbackResult.data;
-      error = fallbackResult.error;
-    }
+      // Backward-compatible fallback for older SQL function signature
+      if (error) {
+        const fallbackResult = await supabase.rpc("verify_admin_login", {
+          p_email: normalizedIdentifier,
+          p_password: password,
+        });
 
-    if (error) {
-      console.error("[Admin] Verify error:", error);
-    } else if (data && data.length > 0) {
-      return {
-        ...data[0],
-        auth_source: "database",
-      };
+        data = fallbackResult.data;
+        error = fallbackResult.error;
+      }
+
+      if (error) {
+        console.error("[Admin] Verify error:", error.message || error);
+      } else if (data && data.length > 0) {
+        return {
+          ...data[0],
+          auth_source: "database",
+        };
+      }
     }
 
     const configured = getConfiguredAdmin();
@@ -138,6 +152,8 @@ async function verifyAdminLogin(identifier, password) {
  */
 async function getAdminById(adminId) {
   try {
+    if (!(await isDatabaseReady())) return null;
+
     const { data, error } = await supabase
       .from("admin_users")
       .select("id, username, email, full_name, role, is_active")
@@ -145,7 +161,7 @@ async function getAdminById(adminId) {
       .single();
 
     if (error) {
-      console.error("[Admin] Fetch error:", error);
+      console.error("[Admin] Fetch error:", error.message || error);
       return null;
     }
 
@@ -213,16 +229,32 @@ async function createManualArticle(
   imageUrl = null,
   publishedAt = null,
 ) {
+  const articleInput = {
+    title,
+    description,
+    url,
+    source_name: sourceName,
+    image_url: imageUrl,
+    published_at: publishedAt || new Date().toISOString(),
+  };
+
+  // Local store first: it is the source of truth whenever Supabase is not set
+  // up, and it keeps the post on disk across restarts either way.
+  const localArticle = fallbackStore.insertAdminArticle(
+    articleInput,
+    storyId,
+    adminId,
+  );
+
+  if (!(await isDatabaseReady())) {
+    if (!localArticle) {
+      console.error("[Admin] Article rejected: URL already published");
+    }
+    return localArticle;
+  }
+
   try {
-    const payload = {
-      story_id: storyId,
-      title,
-      description,
-      url,
-      source_name: sourceName,
-      image_url: imageUrl,
-      published_at: publishedAt || new Date().toISOString(),
-    };
+    const payload = { story_id: storyId, ...articleInput };
 
     if (isUuid(adminId)) {
       payload.published_by_admin_id = adminId;
@@ -234,24 +266,12 @@ async function createManualArticle(
       .select("*")
       .single();
 
-    // Backward-compatible fallback if column does not exist yet.
-    if (
-      error &&
-      String(error.message || "").includes("published_by_admin_id")
-    ) {
-      const fallbackPayload = {
-        story_id: storyId,
-        title,
-        description,
-        url,
-        source_name: sourceName,
-        image_url: imageUrl,
-        published_at: publishedAt || new Date().toISOString(),
-      };
-
+    // Retry without the admin link when the column or its FK target is absent
+    // (migration 005/006 not applied yet).
+    if (error && String(error.message || "").includes("published_by_admin_id")) {
       const fallbackResult = await supabase
         .from("articles")
-        .insert([fallbackPayload])
+        .insert([{ story_id: storyId, ...articleInput }])
         .select("*")
         .single();
 
@@ -260,26 +280,52 @@ async function createManualArticle(
     }
 
     if (error) {
-      console.error("[Admin] Article creation error:", error);
-      return null;
+      console.error("[Admin] Article creation error:", error.message || error);
+      // The post is still readable from the local store, so do not fail the
+      // request just because the database write did not land.
+      return localArticle;
     }
 
     return data;
   } catch (err) {
-    console.error("[Admin] Unexpected error:", err);
-    return null;
+    console.error("[Admin] Unexpected error:", err.message || err);
+    return localArticle;
   }
 }
 
 /**
  * Get admin-published articles
  */
-async function getAdminPublishedArticles(adminId, limit = 20, offset = 0) {
-  try {
-    if (!isUuid(adminId)) {
-      return [];
-    }
+/**
+ * Merge database rows with local-store rows, de-duplicated by URL.
+ * Database rows win, so ids stay stable once Supabase is available.
+ */
+function mergeArticlesByUrl(primary, secondary) {
+  const seen = new Set(
+    primary.map((article) => String(article.url || "").toLowerCase()),
+  );
+  const merged = [...primary];
 
+  for (const article of secondary) {
+    const key = String(article.url || "").toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    merged.push(article);
+  }
+
+  return merged.sort(
+    (a, b) => new Date(b.published_at || 0) - new Date(a.published_at || 0),
+  );
+}
+
+async function getAdminPublishedArticles(adminId, limit = 20, offset = 0) {
+  const localArticles = fallbackStore.getAdminArticles(adminId, limit, offset);
+
+  if (!isUuid(adminId) || !(await isDatabaseReady())) {
+    return localArticles;
+  }
+
+  try {
     const { data, error } = await supabase
       .from("articles")
       .select("*")
@@ -288,14 +334,17 @@ async function getAdminPublishedArticles(adminId, limit = 20, offset = 0) {
       .range(offset, offset + limit - 1);
 
     if (error) {
-      console.error("[Admin] Published articles fetch error:", error);
-      return [];
+      console.error(
+        "[Admin] Published articles fetch error:",
+        error.message || error,
+      );
+      return localArticles;
     }
 
-    return data || [];
+    return mergeArticlesByUrl(data || [], localArticles).slice(0, limit);
   } catch (err) {
-    console.error("[Admin] Unexpected error:", err);
-    return [];
+    console.error("[Admin] Unexpected error:", err.message || err);
+    return localArticles;
   }
 }
 

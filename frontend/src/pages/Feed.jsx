@@ -28,32 +28,6 @@ export default function Feed({ embedded = false, showHeader = true } = {}) {
 
         <aside className="feed-sidebar">
           <div className="feed-sidebar-card">
-            <h3 className="sidebar-title">// TRENDING ON CAMPUS</h3>
-            <ul className="trending-list">
-              <li className="trending-item">
-                <span className="trending-tag">#DevStorm2026</span>
-                <span className="trending-count">2.4K posts</span>
-              </li>
-              <li className="trending-item">
-                <span className="trending-tag">#ICPC2026</span>
-                <span className="trending-count">1.1K posts</span>
-              </li>
-              <li className="trending-item">
-                <span className="trending-tag">#CampusWiFi</span>
-                <span className="trending-count">876 posts</span>
-              </li>
-              <li className="trending-item">
-                <span className="trending-tag">#NexusFest</span>
-                <span className="trending-count">654 posts</span>
-              </li>
-              <li className="trending-item">
-                <span className="trending-tag">#RustLang</span>
-                <span className="trending-count">432 posts</span>
-              </li>
-            </ul>
-          </div>
-
-          <div className="feed-sidebar-card">
             <h3 className="sidebar-title">// ACCOUNTS TO FOLLOW</h3>
             <ul className="follow-list">
               <li className="follow-item">

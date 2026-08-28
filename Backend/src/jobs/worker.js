@@ -1,12 +1,11 @@
 const { fetchAll } = require("../services/fetchers/rssFetcher");
 const { fetchNews } = require("../services/fetchers/newsFetcher");
 const { deduplicate } = require("../services/utils/removeDuplicates");
-const { isTechArticle } = require("../services/utils/techFilter");
+const { sourcesService } = require("../models");
 const {
-  storiesService,
-  articlesService,
-  sourcesService,
-} = require("../models");
+  ingestArticles,
+  sweepOrphanStories,
+} = require("../models/bulkIngestService");
 const { deleteByPattern } = require("../services/cache/cacheService");
 
 function normalizeArticle(article) {
@@ -45,57 +44,34 @@ async function runWorker() {
     const uniqueArticles = deduplicate(rawArticles);
     console.log(`[Worker] Unique articles: ${uniqueArticles.length}`);
 
-    console.log(`[Worker] Step 3: Filtering & Persisting`);
+    console.log(`[Worker] Step 3: Persisting`);
 
-    let insertedArticles = 0;
-    const touchedStoryIds = new Set();
+    const normalized = uniqueArticles
+      .map(normalizeArticle)
+      // No tech filter here: each fetcher already applies its own rule
+      // (keyword matching for general feeds, trusted for tech-only
+      // publications). Re-filtering would discard stories those rules kept.
+      .filter((article) => article.title && article.url && article.source_name);
 
-    for (const rawArticle of uniqueArticles) {
-      const article = normalizeArticle(rawArticle);
-
-      if (!article.title || !article.url || !article.source_name) {
-        continue;
-      }
-
-      if (!isTechArticle(article)) {
-        continue;
-      }
-
-      await sourcesService.getOrCreateSource(article.source_name);
-
-      const storyId = await storiesService.getOrCreateStory(
-        article.title,
-        article.category,
-        article.image_url,
-      );
-
-      if (!storyId) {
-        continue;
-      }
-
-      const articleId = await articlesService.insertArticle(article, storyId);
-
-      if (!articleId) {
-        continue;
-      }
-
-      insertedArticles += 1;
-      touchedStoryIds.add(storyId);
-    }
-
-    let refreshedStories = 0;
-    for (const storyId of touchedStoryIds) {
-      const ok = await storiesService.updateStorySourcesCount(storyId);
-      if (ok) {
-        refreshedStories += 1;
-      }
-    }
-
-    console.log(
-      `[Worker] Persisted ${insertedArticles} articles across ${refreshedStories} stories`,
+    const sourceNames = [...new Set(normalized.map((a) => a.source_name))];
+    await Promise.all(
+      sourceNames.map((name) => sourcesService.getOrCreateSource(name)),
     );
 
-    if (insertedArticles > 0) {
+    const result = await ingestArticles(normalized);
+    const insertedArticles = result.inserted;
+
+    console.log(
+      `[Worker] Persisted ${insertedArticles} new articles (${result.candidates} candidates, ${result.skipped} already known${result.orphansRemoved ? `, ${result.orphansRemoved} empty stories cleaned` : ""}) via ${result.backend}`,
+    );
+
+    // Self-healing: clears anything an interrupted or older run left behind.
+    const sweptOrphans = await sweepOrphanStories();
+    if (sweptOrphans > 0) {
+      console.log(`[Worker] Swept ${sweptOrphans} stories with no article`);
+    }
+
+    if (insertedArticles > 0 || sweptOrphans > 0) {
       const deletedCounts = await Promise.all([
         deleteByPattern("stories:*"),
         deleteByPattern("trending:*"),

@@ -310,7 +310,8 @@ export default function Admin() {
             admin <span className="highlight">publishing</span> console
           </h1>
           <p className="page-desc">
-            Publish Campus Pulse updates for all users. Admin authentication is required for every write action.
+            Publish Campus Pulse updates for all users. Every post appears in
+            the Campus Hub newsletter feed immediately after publishing.
           </p>
         </div>
 
@@ -324,7 +325,8 @@ export default function Admin() {
                 admin login
               </h2>
               <p className="admin-panel-subtitle">
-                Use your existing admin credentials. Test login: testing / 123
+                Restricted to Campus Pulse admins. Anything published here goes
+                live in the Campus Hub feed.
               </p>
             </div>
 
@@ -340,7 +342,7 @@ export default function Admin() {
                 onChange={(event) =>
                   setLoginValues((prev) => ({ ...prev, username: event.target.value }))
                 }
-                placeholder="testing"
+                placeholder="admin username"
                 autoComplete="username"
               />
 

@@ -18,7 +18,7 @@ export default function Home() {
     async function loadPreview() {
       try {
         const [stories, trendingStories] = await Promise.all([
-          newsApi.getStories(),
+          newsApi.getStories({ limit: 12, includeLead: true }),
           newsApi.getTrendingStories().catch(() => []),
         ]);
 
@@ -108,60 +108,9 @@ export default function Home() {
             </div>
           </div>
         </div>
-
-        {/* Background grid pattern */}
-        <div className="hero-grid-bg" />
       </section>
 
-      {/* ── WHAT WE ARE LOOKING FOR ── */}
-      <section className="section looking-for" id="looking-for">
-        <div className="container">
-          <div className="looking-for-center">
-            <span
-              className="pulse-dot"
-              style={{ marginBottom: "1.5rem", display: "block" }}
-            />
-            <p className="section-label">// WHAT WE ARE LOOKING FOR</p>
-            <h2 className="looking-title">
-              built for students who
-              <br />
-              <span className="highlight typing-word">ship.</span>
-            </h2>
-          </div>
-        </div>
-      </section>
 
-      {/* ── QUICK STATS ── */}
-      <section className="section stats-section" id="stats">
-        <div className="container">
-          <div className="stats-grid">
-            <div className="stat-card">
-              <span className="stat-number">342</span>
-              <span className="stat-label">ACTIVE BUILDERS</span>
-            </div>
-            <div className="stat-card">
-              <span className="stat-number">6</span>
-              <span className="stat-label">LIVE NEWS FEEDS</span>
-            </div>
-            <div className="stat-card">
-              <span className="stat-number">5</span>
-              <span className="stat-label">CAMPUS CLUBS</span>
-            </div>
-            <div className="stat-card">
-              <span className="stat-number">4</span>
-              <span className="stat-label">FESTS THIS YEAR</span>
-            </div>
-            <div className="stat-card">
-              <span className="stat-number">127</span>
-              <span className="stat-label">DAYS UPTIME</span>
-            </div>
-            <div className="stat-card">
-              <span className="stat-number">∞</span>
-              <span className="stat-label">OPPORTUNITIES</span>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* ── LATEST NEWS PREVIEW ── */}
       <section className="section" id="news-preview">
@@ -181,7 +130,23 @@ export default function Home() {
                   </span>
                   <span className="news-category">{news.category}</span>
                 </div>
-                <h3 className="news-card-title">{news.title}</h3>
+                <h3 className="news-card-title">
+                  {news.url && news.url !== "#" ? (
+                    <a
+                      href={news.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="news-card-title-link"
+                      onClick={() => {
+                        newsApi.trackStoryClick(news.id);
+                      }}
+                    >
+                      {news.title}
+                    </a>
+                  ) : (
+                    news.title
+                  )}
+                </h3>
                 <p className="news-card-desc">{news.description}</p>
                 <div className="news-card-meta">
                   <span className="news-source">{news.source}</span>
@@ -202,46 +167,6 @@ export default function Home() {
             <Link to="/news" className="btn btn--green">
               <span>// VIEW ALL NEWS →</span>
             </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ── HOW TECHPULSE WORKS ── */}
-      <section className="section why-section" id="why">
-        <div className="container">
-          <p className="section-label">02 //</p>
-          <h2 className="section-title">
-            keep up. show up. <span className="highlight">level up.</span>
-          </h2>
-
-          <div className="grid-3">
-            <div className="card skill-card">
-              <span className="skill-number">SKILL.01</span>
-              <h3 className="skill-title">One place for campus tech signal.</h3>
-              <p className="skill-desc">
-                Tech news, opportunities, clubs, and updates —
-                organized so you don’t miss deadlines or rely on forwarded
-                screenshots.
-              </p>
-            </div>
-            <div className="card skill-card">
-              <span className="skill-number">SKILL.02</span>
-              <h3 className="skill-title">Browse fast. Decide faster.</h3>
-              <p className="skill-desc">
-                Clean pages, consistent tags, and a terminal-style UI that keeps
-                the theme without hiding what matters.
-              </p>
-            </div>
-            <div className="card skill-card">
-              <span className="skill-number">SKILL.03</span>
-              <h3 className="skill-title">
-                Made for builders, not doomscrolling.
-              </h3>
-              <p className="skill-desc">
-                No infinite feed tricks. Just the essentials to help you ship
-                projects, join events, and stay in the loop.
-              </p>
-            </div>
           </div>
         </div>
       </section>
