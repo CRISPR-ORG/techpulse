@@ -1,0 +1,13 @@
+node_modules/
+.vercel
+.DS_Store
+*.log
+
+# Local runtime caches (regenerated automatically)
+Backend/.cache/
+
+# Secrets — configure these in Vercel Project Settings instead
+.env
+.env.local
+.env.*.local
+!.env.example

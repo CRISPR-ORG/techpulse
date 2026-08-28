@@ -4,6 +4,7 @@ const fs = require("fs/promises");
 const path = require("path");
 const { hackathons } = require("../data/listingsData");
 const { fetchTechJobs } = require("../services/fetchers/jobsFetcher");
+const { canUseDiskCache } = require("../config/runtime");
 
 const OPPORTUNITIES_FETCH_LIMIT = Number(
   process.env.OPPORTUNITIES_FETCH_LIMIT || 150,
@@ -26,6 +27,8 @@ function isFreshDailyCache(timestamp) {
 }
 
 async function readDailyFileCache() {
+  if (!canUseDiskCache()) return { fetchedAt: null, data: [] };
+
   try {
     const raw = await fs.readFile(DAILY_CACHE_FILE, "utf8");
     const parsed = JSON.parse(raw);
@@ -43,6 +46,8 @@ function hasUsableOpportunities(payload) {
 }
 
 async function writeDailyFileCache(data) {
+  if (!canUseDiskCache()) return;
+
   try {
     await fs.mkdir(path.dirname(DAILY_CACHE_FILE), { recursive: true });
     await fs.writeFile(

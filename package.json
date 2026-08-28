@@ -1,0 +1,22 @@
+{
+  "name": "techpulse",
+  "private": true,
+  "version": "1.0.0",
+  "description": "TechPulse — campus tech news, opportunities and Campus Pulse. Deployed as a single Vercel project: static React frontend plus an Express API under /api.",
+  "engines": {
+    "node": "22.x"
+  },
+  "workspaces": [
+    "Backend",
+    "frontend"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace=frontend",
+    "vercel-build": "npm run build --workspace=frontend",
+    "dev": "npm run dev --workspace=frontend",
+    "dev:api": "npm run dev --workspace=Backend",
+    "dev:web": "npm run dev --workspace=frontend",
+    "start:api": "npm run start --workspace=Backend",
+    "lint": "npm run lint --workspace=frontend"
+  }
+}

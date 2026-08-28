@@ -2,6 +2,7 @@ const crypto = require("crypto");
 const fs = require("fs");
 const fsPromises = require("fs/promises");
 const path = require("path");
+const { canUseDiskCache } = require("../config/runtime");
 
 const STORE_FILE = path.join(__dirname, "../../.cache/local-store.json");
 const PERSIST_DEBOUNCE_MS = 1500;
@@ -19,7 +20,7 @@ const MAX_FEED_ARTICLES = 500;
  * migrations in `supabase/sql/` have been run.
  */
 class FallbackStore {
-  constructor({ persist = true } = {}) {
+  constructor({ persist = canUseDiskCache() } = {}) {
     this.sources = new Map(); // id -> source
     this.stories = new Map(); // id -> story
     this.articles = new Map(); // id -> article

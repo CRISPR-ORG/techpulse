@@ -13,6 +13,10 @@ dist-ssr
 *.local
 
 # Environment
+# .env is committed on purpose and must stay free of absolute API URLs
+# (Vite inlines them into the production bundle at build time).
+.env.local
+.env.*.local
 .envx
 
 # Internal docs

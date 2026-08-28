@@ -4,6 +4,7 @@ const path = require("path");
 const { getJSON, setJSON } = require("../services/cache/cacheService");
 const { cacheKeys, CACHE_TTL } = require("../services/cache/cacheKeys");
 const { fetchOpenSourceData } = require("../services/fetchers/githubFetcher");
+const { canUseDiskCache } = require("../config/runtime");
 
 const router = express.Router();
 
@@ -29,6 +30,8 @@ function isFresh(timestamp) {
 }
 
 async function readFileCache() {
+  if (!canUseDiskCache()) return { fetchedAt: null, data: null };
+
   try {
     const raw = await fs.readFile(DAILY_CACHE_FILE, "utf8");
     const parsed = JSON.parse(raw);
@@ -39,6 +42,8 @@ async function readFileCache() {
 }
 
 async function writeFileCache(data) {
+  if (!canUseDiskCache()) return;
+
   try {
     await fs.mkdir(path.dirname(DAILY_CACHE_FILE), { recursive: true });
     await fs.writeFile(

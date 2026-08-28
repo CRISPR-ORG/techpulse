@@ -1,0 +1,14 @@
+# Not needed in the deployment bundle.
+architecture/
+*.md
+!README.md
+
+# Local runtime artifacts. The filesystem is read-only on Vercel, so these are
+# never read or written there.
+Backend/.cache/
+**/*.log
+
+# Never upload real secrets — Vercel env vars are the source of truth.
+.env
+.env.*
+!.env.example
