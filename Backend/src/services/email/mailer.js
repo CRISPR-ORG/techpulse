@@ -1,109 +1,119 @@
-const { Resend } = require("resend");
+const axios = require("axios");
 
-let client = null;
+const BREVO_SEND_URL = "https://api.brevo.com/v3/smtp/email";
 
-function getClient() {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return null;
-
-  if (!client) {
-    client = new Resend(apiKey);
-  }
-
-  return client;
+function getApiKey() {
+  return process.env.BREVO_API_KEY || "";
 }
 
-const SANDBOX_SENDER_DOMAIN = "resend.dev";
+function isEmailConfigured() {
+  return Boolean(getApiKey());
+}
 
-function extractDomain(address) {
-  const match = String(address || "").match(/@([^>\s]+)/);
-  return match ? match[1].toLowerCase().replace(/[>\s]+$/, "") : "";
+/** Brevo wants { name?, email }. Accepts "Name <email>" or a bare address. */
+function parseAddress(address) {
+  const match = String(address || "").match(/^(.*)<([^>]+)>$/);
+  if (match) {
+    const name = match[1].trim().replace(/^"|"$/g, "");
+    return { ...(name ? { name } : {}), email: match[2].trim() };
+  }
+  return { email: String(address || "").trim() };
+}
+
+function parseAddressList(value) {
+  return (Array.isArray(value) ? value : String(value || "").split(","))
+    .map((address) => String(address).trim())
+    .filter(Boolean)
+    .map(parseAddress);
 }
 
 /**
  * Report configuration that will fail at send time.
  *
- * Resend's shared sender (onboarding@resend.dev) only delivers to the address
- * that owns the Resend account, so a digest aimed anywhere else is rejected.
- * That rejection otherwise only surfaces in the log at 07:00, by which point
- * the missing email looks like the cron never ran.
+ * Brevo rejects a send from a sender address that has not been verified in
+ * the account (Senders & IP > Senders). That rejection otherwise only
+ * surfaces in the log at 07:00, by which point the missing email looks like
+ * the cron never ran.
  */
 function checkDeliveryConfig() {
   const problems = [];
 
-  const from = process.env.DIGEST_FROM_EMAIL || "";
-  const to = process.env.DIGEST_TO_EMAIL || "";
-
-  if (!process.env.RESEND_API_KEY) {
-    problems.push("RESEND_API_KEY is not set - the digest cannot send.");
+  if (!getApiKey()) {
+    problems.push("BREVO_API_KEY is not set - the digest cannot send.");
   }
 
-  if (extractDomain(from).endsWith(SANDBOX_SENDER_DOMAIN)) {
+  if (!process.env.DIGEST_FROM_EMAIL) {
     problems.push(
-      `DIGEST_FROM_EMAIL uses Resend's sandbox sender (${from}). It can only ` +
-        `deliver to the email that owns your Resend account, so sending to ` +
-        `${to || "your recipient"} will be rejected. Verify a domain at ` +
-        "resend.com/domains and set DIGEST_FROM_EMAIL to an address on it.",
+      "DIGEST_FROM_EMAIL is not set. Set it to a sender verified in Brevo " +
+        "(app.brevo.com > Senders, Domains & Dedicated IPs).",
     );
   }
 
   return problems;
 }
 
-function isEmailConfigured() {
-  return Boolean(process.env.RESEND_API_KEY);
-}
-
 /**
- * Send one email through Resend.
+ * Send one email through Brevo's transactional email API.
  * Returns { ok, id?, error? } instead of throwing, so a failed digest never
  * takes down the cron job or the request that triggered it.
  */
-async function sendEmail({ to, subject, html, text, from, replyTo }) {
-  const resend = getClient();
+async function sendEmail({ to, bcc, subject, html, text, from, replyTo }) {
+  const apiKey = getApiKey();
 
-  if (!resend) {
+  if (!apiKey) {
     return {
       ok: false,
       error:
-        "RESEND_API_KEY is not set. Add it to Backend/.env to enable the daily digest.",
+        "BREVO_API_KEY is not set. Add it to Backend/.env to enable the daily digest.",
     };
   }
 
-  const recipients = (Array.isArray(to) ? to : String(to || "").split(","))
-    .map((address) => String(address).trim())
-    .filter(Boolean);
+  const toList = parseAddressList(to);
 
-  if (recipients.length === 0) {
+  if (toList.length === 0) {
     return { ok: false, error: "No recipient configured (DIGEST_TO_EMAIL)." };
   }
 
-  const sender =
+  const bccList = parseAddressList(bcc);
+
+  const sender = parseAddress(
     from ||
-    process.env.DIGEST_FROM_EMAIL ||
-    "TechPulse <onboarding@resend.dev>";
+      process.env.DIGEST_FROM_EMAIL ||
+      "TechPulse <no-reply@techpulse.dev>",
+  );
 
   try {
-    const { data, error } = await resend.emails.send({
-      from: sender,
-      to: recipients,
-      subject,
-      html,
-      text,
-      ...(replyTo ? { replyTo } : {}),
-    });
+    const { data } = await axios.post(
+      BREVO_SEND_URL,
+      {
+        sender,
+        to: toList,
+        ...(bccList.length > 0 ? { bcc: bccList } : {}),
+        subject,
+        htmlContent: html,
+        textContent: text,
+        ...(replyTo ? { replyTo: parseAddress(replyTo) } : {}),
+      },
+      {
+        headers: {
+          "api-key": apiKey,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        timeout: 15000,
+      },
+    );
 
-    if (error) {
-      // Resend reports validation and domain problems here, not as a throw.
-      const message = error.message || JSON.stringify(error);
-      console.error("[Mailer] Resend rejected the send:", message);
-      return { ok: false, error: message };
-    }
-
-    return { ok: true, id: data?.id || null, recipients };
+    return {
+      ok: true,
+      id: data?.messageId || null,
+      recipients: [...toList, ...bccList].map((r) => r.email),
+    };
   } catch (err) {
-    const message = err?.message || String(err);
-    console.error("[Mailer] Send failed:", message);
+    // Brevo reports validation and sender-verification problems in the body.
+    const message =
+      err.response?.data?.message || err.message || String(err);
+    console.error("[Mailer] Brevo rejected the send:", message);
     return { ok: false, error: message };
   }
 }

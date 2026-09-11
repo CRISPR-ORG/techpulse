@@ -175,84 +175,97 @@ unapplied, posts are stored in `Backend/.cache/local-store.json` instead.
 
 # Daily Tech News Digest (7 AM email)
 
-An automated email of the day's tech news, sent through Resend.
+An automated email of the day's tech news, sent through Brevo, to everyone
+who subscribed from the homepage plus the optional operator address.
 
 ## Schedule
 
-- Runs at **07:00 Asia/Kolkata**, every day (`DIGEST_CRON`, `DIGEST_TIMEZONE`).
+- Runs at **07:00 Asia/Kolkata**, every day (`DIGEST_CRON`, `DIGEST_TIMEZONE`
+  locally; on Vercel the schedule lives in `vercel.json`'s `crons` instead).
 - Registered in `Backend/src/jobs/scheduler.js`; the job lives in
   `Backend/src/jobs/dailyDigest.js`.
-- The backend process must be running for the cron to fire.
+- Locally, the backend process must be running for the cron to fire.
+
+## Subscribing (homepage)
+
+A "GET THE DAILY DIGEST" form on the homepage posts to `POST /api/subscribe`
+with `{ "email": "you@iiitn.ac.in" }`. Only `@iiitn.ac.in` addresses are
+accepted (enforced in `subscribersService.js`, mirrored in the homepage form)
+— anything else is rejected with a 400. Accepted addresses are added as a
+contact to
+a Brevo list (`BREVO_DIGEST_LIST_ID`, default `3` — the "TechPulse" list in
+the Brevo dashboard) via `Backend/src/models/subscribersService.js`. Brevo is
+the source of truth for subscribers, not a local table. Re-subscribing
+relinks an existing contact to the list. `POST /api/subscribe/unsubscribe`
+(or `GET /api/subscribe/unsubscribe?email=...`) unlinks the contact from the
+list without deleting it from Brevo.
+
+Recipients for the 07:00 send are every contact currently on that list plus
+`DIGEST_TO_EMAIL` (if set), deduplicated. Recipient addresses ride in `Bcc`
+(with one address as the visible `To`) so they are never exposed to each
+other. See `Backend/src/jobs/dailyDigest.js:getRecipients`.
 
 ## Required setup
 
-Add your Resend key to `Backend/.env`:
+Add your Brevo API key to `Backend/.env`:
 
 ```
-RESEND_API_KEY=re_your_key_here
+BREVO_API_KEY=xkeysib-your_key_here
 ```
 
-Without it the job still builds the email, logs the story count, and skips the
-send with a clear message — it does not crash.
+Get it from <https://app.brevo.com> → **SMTP & API** → **API Keys**. Without
+it the job still builds the email, logs the story count, and skips the send
+with a clear message — it does not crash.
 
 ## Configuration
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `RESEND_API_KEY` | _(empty)_ | Resend API key. Required to send. |
-| `DIGEST_TO_EMAIL` | `bt25csh002@iiitn.ac.in` | Recipient. Comma-separate for several. |
-| `DIGEST_FROM_EMAIL` | `TechPulse <onboarding@resend.dev>` | Sender. Needs a verified domain for arbitrary recipients. |
-| `DIGEST_CRON` | `0 7 * * *` | Cron expression. |
-| `DIGEST_TIMEZONE` | `Asia/Kolkata` | Timezone the cron is evaluated in. |
+| `BREVO_API_KEY` | _(empty)_ | Brevo API key. Required to send and to manage subscribers. |
+| `BREVO_DIGEST_LIST_ID` | `3` | Brevo contact list holding digest subscribers. |
+| `DIGEST_TO_EMAIL` | `bt25csh002@iiitn.ac.in` | Optional operator address, always included alongside subscribers. Comma-separate for several. |
+| `DIGEST_FROM_EMAIL` | `TechPulse <no-reply@techpulse.dev>` | Sender. Must be a sender verified in Brevo. |
+| `DIGEST_CRON` | `0 7 * * *` | Cron expression (local `node-cron` only). |
+| `DIGEST_TIMEZONE` | `Asia/Kolkata` | Timezone the local cron is evaluated in. |
 | `DIGEST_ENABLED` | `true` | Set `false` to turn the job off. |
 | `DIGEST_SITE_URL` | _(empty)_ | Optional "open the full feed" link. |
 
-## Sender domain — required to reach the college address
+## Sender verification — required to send at all
 
-`onboarding@resend.dev` is Resend's shared sandbox sender. It only delivers to
-the address that owns the Resend account. Sending anywhere else is rejected:
+Brevo rejects a send from a `DIGEST_FROM_EMAIL` address that isn't verified on
+the account. The backend warns about this at startup if `DIGEST_FROM_EMAIL`
+is unset, so the problem is visible immediately rather than as a missing
+email at 07:00.
 
-```
-You can only send testing emails to your own email address (...).
-To send emails to other recipients, please verify a domain at resend.com/domains
-```
+### Verifying a sender (one-time)
 
-The backend warns about this at startup, so the problem is visible immediately
-rather than as a missing email at 07:00.
-
-### Verifying a domain (one-time)
-
-1. **Have a domain.** Any domain you control works — a `.dev`/`.xyz` is a few
-   hundred rupees a year. It does not need a website on it, only DNS access.
-2. Open <https://resend.com/domains> → **Add Domain** → enter the domain
-   (a subdomain such as `mail.yourdomain.com` is fine and keeps the root
-   domain's email untouched).
-3. Resend shows DNS records — typically a DKIM `TXT`, an SPF `TXT`, and
-   sometimes a `MX`. Add each one at your registrar exactly as shown.
-4. Back in Resend, click **Verify**. Propagation is usually minutes; DNS can
-   take up to a few hours.
-5. Once the domain shows **Verified**, edit `Backend/.env`:
+1. Open <https://app.brevo.com> → **Senders, Domains & Dedicated IPs** →
+   **Senders** tab → **Add a sender**.
+2. Enter the from-address you want to use (e.g. `digest@yourdomain.com`) and
+   confirm via the verification email Brevo sends to it — a quick way to
+   start is verifying an address you already control (e.g. your own inbox);
+   verifying a domain instead (**Domains** tab, add DKIM/SPF DNS records)
+   lets you send from any address on it.
+3. Once verified, edit `Backend/.env`:
 
    ```
    DIGEST_FROM_EMAIL=TechPulse <digest@yourdomain.com>
    ```
 
-   The mailbox does not have to exist — it is a send-only From address.
-6. **Restart the backend.** `.env` is read once at startup, so a change has no
-   effect until the process restarts.
-7. Confirm with a real send:
+4. **Restart the backend.** `.env` is read once at startup, so a change has
+   no effect until the process restarts.
+5. Confirm with a real send:
 
    ```
    POST /api/admin/digest/send
    Authorization: Bearer <admin-jwt>
    ```
 
-   A `200` with an `emailId` means it delivered. The startup warning also
-   disappears once the sender is off `resend.dev`.
+   A `200` with an `emailId` means it delivered.
 
 ### Free tier
 
-One domain and 3,000 emails/month — far beyond one digest a day.
+300 emails/day — far beyond one digest to a campus mailing list.
 
 ## Contents
 

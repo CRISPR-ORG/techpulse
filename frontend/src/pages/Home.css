@@ -143,6 +143,95 @@
   letter-spacing: 2px;
 }
 
+/* ── DAILY DIGEST SUBSCRIBE ── */
+.subscribe-card {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: var(--space-2xl);
+  align-items: center;
+  padding: var(--space-2xl);
+}
+
+.subscribe-title {
+  margin-bottom: var(--space-md);
+}
+
+.subscribe-desc {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.8;
+  max-width: 480px;
+}
+
+.subscribe-form-row {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.subscribe-input {
+  flex: 1;
+  min-width: 220px;
+  border: 1px solid var(--border-primary);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  padding: 12px 14px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  border-radius: var(--radius-sm);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.subscribe-input::placeholder {
+  color: var(--text-dim);
+}
+
+.subscribe-input:focus {
+  outline: none;
+  border-color: var(--green-dim);
+  box-shadow: 0 0 0 1px rgba(0, 255, 65, 0.2);
+}
+
+.subscribe-input:disabled {
+  opacity: 0.6;
+}
+
+.subscribe-btn {
+  white-space: nowrap;
+}
+
+.subscribe-message {
+  margin-top: var(--space-sm);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.subscribe-message--done {
+  color: var(--green);
+}
+
+.subscribe-message--error {
+  color: var(--red);
+}
+
+@media (max-width: 1024px) {
+  .subscribe-card {
+    grid-template-columns: 1fr;
+    text-align: left;
+  }
+}
+
+@media (max-width: 480px) {
+  .subscribe-form-row {
+    flex-direction: column;
+  }
+
+  .subscribe-btn {
+    width: 100%;
+  }
+}
+
 /* ── NEWS CARDS ── */
 .news-card {
   display: flex;

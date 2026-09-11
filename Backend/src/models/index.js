@@ -7,6 +7,7 @@ const articlesService = require("./articlesService");
 const sourcesService = require("./sourcesService");
 const storyClicksService = require("./storyClicksService");
 const adminService = require("./adminService");
+const subscribersService = require("./subscribersService");
 
 module.exports = {
   supabase,
@@ -15,4 +16,5 @@ module.exports = {
   sourcesService,
   storyClicksService,
   adminService,
+  subscribersService,
 };

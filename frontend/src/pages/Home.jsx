@@ -6,8 +6,78 @@ import {
   buildStoryCards,
   newsApi,
   sortStoriesByClicks,
+  subscribeApi,
 } from "../services/apiClient";
 import "./Home.css";
+
+const COLLEGE_EMAIL_PATTERN = /^[^\s@]+@iiitn\.ac\.in$/i;
+
+function DigestSubscribeForm() {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState("idle"); // idle | loading | done | error
+  const [message, setMessage] = useState("");
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+
+    const trimmed = email.trim();
+    if (!COLLEGE_EMAIL_PATTERN.test(trimmed)) {
+      setStatus("error");
+      setMessage("Only @iiitn.ac.in college email addresses can subscribe.");
+      return;
+    }
+
+    setStatus("loading");
+    setMessage("");
+
+    try {
+      await subscribeApi.subscribe(trimmed);
+      setStatus("done");
+      setMessage("You're in. First digest lands at 7:00 AM.");
+      setEmail("");
+    } catch (err) {
+      setStatus("error");
+      setMessage(err?.message || "Subscription failed. Try again.");
+    }
+  }
+
+  return (
+    <form className="subscribe-form" onSubmit={handleSubmit} noValidate>
+      <div className="subscribe-form-row">
+        <input
+          type="email"
+          className="subscribe-input"
+          placeholder="you@iiitn.ac.in"
+          pattern="[^\s@]+@iiitn\.ac\.in"
+          value={email}
+          onChange={(event) => {
+            setEmail(event.target.value);
+            if (status !== "idle") {
+              setStatus("idle");
+              setMessage("");
+            }
+          }}
+          disabled={status === "loading"}
+          aria-label="Email address"
+          required
+        />
+        <button
+          type="submit"
+          className="btn btn--green subscribe-btn"
+          disabled={status === "loading"}
+        >
+          <span>{status === "loading" ? "// SUBSCRIBING..." : "// SUBSCRIBE"}</span>
+        </button>
+      </div>
+      {message && (
+        <p className={`subscribe-message subscribe-message--${status}`}>
+          {status === "done" ? "✓ " : status === "error" ? "✕ " : ""}
+          {message}
+        </p>
+      )}
+    </form>
+  );
+}
 
 export default function Home() {
   const [previewNews, setPreviewNews] = useState([]);
@@ -110,7 +180,28 @@ export default function Home() {
         </div>
       </section>
 
-
+      {/* ── DAILY DIGEST SUBSCRIBE ── */}
+      <section className="section subscribe-section" id="subscribe">
+        <div className="container">
+          <div className="subscribe-card card">
+            <div className="subscribe-copy">
+              <p className="section-label">// daily digest</p>
+              <h2 className="section-title subscribe-title">
+                get the <span className="highlight">top tech stories</span>
+                <br />
+                in your inbox at 7:00 AM.
+              </h2>
+              <p className="subscribe-desc">
+                One email, every morning. The day's most important tech news,
+                ranked and summarized. No spam, unsubscribe anytime.
+                <br />
+                Open to <strong>@iiitn.ac.in</strong> college email addresses only.
+              </p>
+            </div>
+            <DigestSubscribeForm />
+          </div>
+        </div>
+      </section>
 
       {/* ── LATEST NEWS PREVIEW ── */}
       <section className="section" id="news-preview">

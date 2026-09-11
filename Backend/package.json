@@ -22,7 +22,6 @@
     "jsonwebtoken": "^9.0.3",
     "node-cron": "^4.2.1",
     "nodemon": "^3.1.14",
-    "resend": "^6.24.0",
     "rss-parser": "^3.13.0"
   }
 }

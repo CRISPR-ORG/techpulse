@@ -7,6 +7,7 @@ const githubRoutes = require("./githubRoutes");
 const adminRoutes = require("./adminRoutes");
 const listingsRoutes = require("./listingsRoutes");
 const cronRoutes = require("./cronRoutes");
+const subscribersRoutes = require("./subscribersRoutes");
 
 const router = express.Router();
 
@@ -18,5 +19,6 @@ router.use("/github-opportunities", githubRoutes);
 router.use("/admin", adminRoutes);
 router.use("/listings", listingsRoutes);
 router.use("/cron", cronRoutes);
+router.use("/subscribe", subscribersRoutes);
 
 module.exports = router;

@@ -159,6 +159,15 @@ export const openSourceApi = {
   },
 };
 
+export const subscribeApi = {
+  subscribe(email) {
+    return apiRequest("/subscribe", {
+      method: "POST",
+      body: { email },
+    });
+  },
+};
+
 export const adminApi = {
   login(username, password) {
     return apiRequest("/admin/login", {

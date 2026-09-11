@@ -1,4 +1,4 @@
-const { storiesService, articlesService } = require("../models");
+const { storiesService, articlesService, subscribersService } = require("../models");
 const { buildDigestEmail } = require("../services/email/digestTemplate");
 const { sendEmail, isEmailConfigured } = require("../services/email/mailer");
 const {
@@ -22,8 +22,25 @@ function getTimezone() {
   return process.env.DIGEST_TIMEZONE || DEFAULT_TIMEZONE;
 }
 
-function getRecipient() {
-  return process.env.DIGEST_TO_EMAIL || DEFAULT_RECIPIENT;
+/**
+ * Everyone who should get the digest: homepage subscribers plus the
+ * operator's own address (DIGEST_TO_EMAIL), deduped. Falls back to
+ * DEFAULT_RECIPIENT only when neither source has anyone yet.
+ */
+async function getRecipients() {
+  const subscribers = await subscribersService.getActiveSubscriberEmails();
+  const adminEmails = String(process.env.DIGEST_TO_EMAIL || "")
+    .split(",")
+    .map((address) => address.trim().toLowerCase())
+    .filter(Boolean);
+
+  const recipients = new Set([...subscribers, ...adminEmails]);
+
+  if (recipients.size === 0) {
+    recipients.add(DEFAULT_RECIPIENT);
+  }
+
+  return [...recipients];
 }
 
 /**
@@ -291,21 +308,26 @@ async function runDailyDigest({ dryRun = false } = {}) {
 
     if (!isEmailConfigured()) {
       const error =
-        "RESEND_API_KEY is not set - skipping send. Add it to Backend/.env.";
+        "BREVO_API_KEY is not set - skipping send. Add it to Backend/.env.";
       console.warn(`[Digest] ${error}`);
       return { ok: false, count: items.length, error };
     }
 
-    const recipient = getRecipient();
+    // Recipients ride in Bcc (with the first as the visible To) so
+    // subscribers' addresses are never exposed to one another.
+    const [primaryRecipient, ...otherRecipients] = await getRecipients();
     const result = await sendEmail({
-      to: recipient,
+      to: primaryRecipient,
+      bcc: otherRecipients,
       subject: email.subject,
       html: email.html,
       text: email.text,
     });
 
     if (result.ok) {
-      console.log(`[Digest] Sent to ${recipient} (id: ${result.id})`);
+      console.log(
+        `[Digest] Sent to ${1 + otherRecipients.length} recipient(s) (id: ${result.id})`,
+      );
     } else {
       console.error(`[Digest] Send failed: ${result.error}`);
     }
