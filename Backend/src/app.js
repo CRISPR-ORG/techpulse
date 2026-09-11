@@ -1,6 +1,16 @@
+const dns = require("dns");
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
+
+/**
+ * Node changed its default DNS lookup order to "verbatim" (tries AAAA before
+ * A, in whatever order the resolver returns them), which surfaces as
+ * `getaddrinfo EBUSY <host>` for some external hosts inside Vercel's
+ * serverless runtime. Forcing IPv4-first avoids that IPv6 resolution path
+ * entirely - needed for outbound calls like the Brevo API in the digest job.
+ */
+dns.setDefaultResultOrder("ipv4first");
 
 const apiRoutes = require("./routes");
 
