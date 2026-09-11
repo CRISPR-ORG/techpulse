@@ -1,4 +1,4 @@
-const axios = require("axios");
+const { brevoRequest } = require("../brevoClient");
 
 const BREVO_SEND_URL = "https://api.brevo.com/v3/smtp/email";
 
@@ -83,9 +83,10 @@ async function sendEmail({ to, bcc, subject, html, text, from, replyTo }) {
   );
 
   try {
-    const { data } = await axios.post(
-      BREVO_SEND_URL,
-      {
+    const { data } = await brevoRequest({
+      method: "post",
+      url: BREVO_SEND_URL,
+      data: {
         sender,
         to: toList,
         ...(bccList.length > 0 ? { bcc: bccList } : {}),
@@ -94,15 +95,13 @@ async function sendEmail({ to, bcc, subject, html, text, from, replyTo }) {
         textContent: text,
         ...(replyTo ? { replyTo: parseAddress(replyTo) } : {}),
       },
-      {
-        headers: {
-          "api-key": apiKey,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        timeout: 15000,
+      headers: {
+        "api-key": apiKey,
+        "Content-Type": "application/json",
+        Accept: "application/json",
       },
-    );
+      timeout: 15000,
+    });
 
     return {
       ok: true,

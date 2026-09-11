@@ -1,4 +1,4 @@
-const axios = require("axios");
+const { brevoRequest } = require("../services/brevoClient");
 
 const BREVO_CONTACTS_URL = "https://api.brevo.com/v3/contacts";
 // Digest signups are restricted to the college domain.
@@ -41,11 +41,13 @@ async function subscribe(email) {
   }
 
   try {
-    await axios.post(
-      BREVO_CONTACTS_URL,
-      { email: normalized, listIds: [getListId()], updateEnabled: true },
-      { headers: headers(), timeout: 15000 },
-    );
+    await brevoRequest({
+      method: "post",
+      url: BREVO_CONTACTS_URL,
+      data: { email: normalized, listIds: [getListId()], updateEnabled: true },
+      headers: headers(),
+      timeout: 15000,
+    });
 
     return { ok: true };
   } catch (err) {
@@ -68,11 +70,13 @@ async function unsubscribe(email) {
   }
 
   try {
-    await axios.put(
-      `${BREVO_CONTACTS_URL}/${encodeURIComponent(normalized)}`,
-      { unlinkListIds: [getListId()] },
-      { headers: headers(), timeout: 15000 },
-    );
+    await brevoRequest({
+      method: "put",
+      url: `${BREVO_CONTACTS_URL}/${encodeURIComponent(normalized)}`,
+      data: { unlinkListIds: [getListId()] },
+      headers: headers(),
+      timeout: 15000,
+    });
 
     return { ok: true };
   } catch (err) {
@@ -93,14 +97,13 @@ async function getActiveSubscriberEmails() {
 
   try {
     for (;;) {
-      const { data } = await axios.get(
-        `${BREVO_CONTACTS_URL}/lists/${getListId()}/contacts`,
-        {
-          headers: headers(),
-          params: { limit, offset },
-          timeout: 15000,
-        },
-      );
+      const { data } = await brevoRequest({
+        method: "get",
+        url: `${BREVO_CONTACTS_URL}/lists/${getListId()}/contacts`,
+        headers: headers(),
+        params: { limit, offset },
+        timeout: 15000,
+      });
 
       const contacts = Array.isArray(data?.contacts) ? data.contacts : [];
       for (const contact of contacts) {
