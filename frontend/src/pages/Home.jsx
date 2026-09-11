@@ -31,9 +31,9 @@ function DigestSubscribeForm() {
     setMessage("");
 
     try {
-      await subscribeApi.subscribe(trimmed);
+      const response = await subscribeApi.subscribe(trimmed);
       setStatus("done");
-      setMessage("You're in. First digest lands at 7:00 AM.");
+      setMessage(response?.message || "You're in. First digest lands at 7:00 AM.");
       setEmail("");
     } catch (err) {
       setStatus("error");

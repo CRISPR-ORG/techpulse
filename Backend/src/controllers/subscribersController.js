@@ -8,6 +8,14 @@ async function subscribe(req, res) {
     return res.status(400).json({ error: result.error });
   }
 
+  if (result.alreadySubscribed) {
+    return res.status(200).json({
+      message:
+        "You're already subscribed. News will be sent to your mail at 7:00 AM in the morning.",
+      alreadySubscribed: true,
+    });
+  }
+
   return res.status(201).json({ message: "Subscribed. See you at 7AM." });
 }
 

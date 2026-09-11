@@ -29,6 +29,23 @@ function normalizeEmail(email) {
   return String(email || "").trim().toLowerCase();
 }
 
+/** Whether a contact is already linked to the digest list specifically. */
+async function isOnDigestList(email) {
+  try {
+    const { data } = await brevoRequest({
+      method: "get",
+      url: `${BREVO_CONTACTS_URL}/${encodeURIComponent(email)}`,
+      headers: headers(),
+      timeout: 15000,
+    });
+
+    return Array.isArray(data?.listIds) && data.listIds.includes(getListId());
+  } catch (err) {
+    if (err.response?.status === 404) return false; // no such contact yet
+    throw err;
+  }
+}
+
 /** Add (or link) a contact to the digest list. Idempotent on re-subscribe. */
 async function subscribe(email) {
   const normalized = normalizeEmail(email);
@@ -41,6 +58,10 @@ async function subscribe(email) {
   }
 
   try {
+    if (await isOnDigestList(normalized)) {
+      return { ok: true, alreadySubscribed: true };
+    }
+
     await brevoRequest({
       method: "post",
       url: BREVO_CONTACTS_URL,
@@ -49,7 +70,7 @@ async function subscribe(email) {
       timeout: 15000,
     });
 
-    return { ok: true };
+    return { ok: true, alreadySubscribed: false };
   } catch (err) {
     const message =
       err.response?.data?.message || err.message || String(err);
