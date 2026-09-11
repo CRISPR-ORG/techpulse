@@ -32,7 +32,7 @@
     },
     {
       "path": "/api/cron/digest",
-      "schedule": "30 11 * * *"
+      "schedule": "30 1 * * *"
     }
   ]
 }
