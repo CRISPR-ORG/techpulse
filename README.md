@@ -82,6 +82,10 @@ This repo deploys as a **single Vercel project**: the React app builds to static
 
 Environment variables must be set separately in the Vercel dashboard (Project → Settings → Environment Variables) — `Backend/.env` is never deployed. Note: on Vercel's Hobby plan, Cron Jobs fire within a **1-hour flexible window** of the scheduled time, not the exact minute.
 
+### Running as a standalone container
+
+TechPulse can also run as a single self-contained Docker image (frontend + API + scheduled jobs all in one process) — see [`DOCKER.md`](./DOCKER.md) for build/run instructions and important notes on not double-running the scheduled jobs if this is deployed alongside the Vercel hosting above.
+
 ## License
 
 No license specified — all rights reserved by the repository owner.

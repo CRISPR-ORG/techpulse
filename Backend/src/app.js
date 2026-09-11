@@ -1,4 +1,6 @@
 const dns = require("dns");
+const fs = require("fs");
+const path = require("path");
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
@@ -69,10 +71,32 @@ app.get("/api", (req, res) => {
   res.json({ message: "TechPulse API is running" });
 });
 
-// Only reached in local development; on Vercel the static frontend owns "/".
-app.get("/", (req, res) => {
-  res.json({ message: "TechPulse API is running" });
-});
+/**
+ * Serve the built frontend when running as a standalone container (Docker),
+ * so the same process answers both the API and the site.
+ *
+ * On Vercel this is dead code: vercel.json rewrites every non-`/api` request
+ * straight to the static `/index.html` at the CDN layer, so those requests
+ * never reach this Express app there, and FRONTEND_DIST won't exist in that
+ * deployment anyway (Vercel bundles only "Backend/src/**").
+ */
+const FRONTEND_DIST = path.join(__dirname, "../../frontend/dist");
+
+if (fs.existsSync(FRONTEND_DIST)) {
+  app.use(express.static(FRONTEND_DIST));
+
+  // SPA fallback: any non-API GET resolves to index.html so client-side
+  // routes (e.g. a refresh on /news) work.
+  app.get(/^\/(?!api(?:\/|$)).*/, (req, res) => {
+    res.sendFile(path.join(FRONTEND_DIST, "index.html"));
+  });
+} else {
+  // Local development without a frontend build - the Vite dev server on
+  // :5173 serves the site instead.
+  app.get("/", (req, res) => {
+    res.json({ message: "TechPulse API is running" });
+  });
+}
 
 app.use((req, res) => {
   res.status(404).json({ error: `No API route for ${req.method} ${req.path}` });

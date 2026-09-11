@@ -1,0 +1,18 @@
+services:
+  techpulse:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file:
+      - Backend/.env
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+    restart: unless-stopped
+
+  # Optional: uncomment to run Redis alongside the app for response caching.
+  # Set REDIS_ENABLED=true and REDIS_URL=redis://redis:6379 in Backend/.env
+  # to use it.
+  # redis:
+  #   image: redis:7-alpine
+  #   restart: unless-stopped
