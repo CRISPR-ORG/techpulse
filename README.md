@@ -33,7 +33,6 @@ See [`admin panel.md`](./admin%20panel.md) for detailed documentation of the adm
 │   │   ├── models/          # Data access (Supabase + fallback store)
 │   │   ├── services/        # Fetchers, email, cache, source config
 │   │   └── jobs/            # Worker (news ingest) and daily digest
-│   └── supabase/sql/        # Numbered SQL migrations, run in order
 ├── frontend/                # React + Vite app
 │   └── src/
 │       ├── pages/           # One file per route
@@ -59,8 +58,6 @@ cp Backend/.env.example Backend/.env
 ```
 
 At minimum you'll need a Supabase project (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) and a Brevo API key (`BREVO_API_KEY`) to enable the digest email — see `Backend/.env.example` for the full list and what's optional. Without Supabase configured, the backend runs on a local on-disk store so the site still works for development.
-
-Run the database migrations in `Backend/supabase/sql/` (in numeric order) via the Supabase SQL Editor — see `Backend/supabase/sql/README.md`.
 
 Then, in separate terminals:
 

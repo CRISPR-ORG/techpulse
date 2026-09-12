@@ -16,8 +16,8 @@ const MAX_FEED_ARTICLES = 500;
  *
  * State is mirrored to disk so admin-published Campus Pulse posts survive a
  * restart. Without this, anything an admin publishes is lost when the process
- * exits, which makes the admin portal effectively useless until the Supabase
- * migrations in `supabase/sql/` have been run.
+ * exits, which makes the admin portal effectively useless until Supabase is
+ * configured and its schema is set up.
  */
 class FallbackStore {
   constructor({ persist = canUseDiskCache() } = {}) {

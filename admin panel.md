@@ -40,7 +40,7 @@ Base path: `/api/admin`
 ```json
 {
   "username": "crisprisbest",
-  "password": "1234"
+  "password": "<ADMIN_PASSWORD from Backend/.env>"
 }
 ```
 
@@ -116,33 +116,18 @@ Authorization: Bearer <jwt-token>
 - Auth required: `No`
 - Purpose: Returns all stories under the Campus Pulse section, including admin-published stories.
 
-## SQL Added for Admin Feature
+## Database schema
 
-A new migration file was added:
+The SQL migration files that set up `admin_users`, `articles.published_by_admin_id`,
+and the `verify_admin_login` function have been removed from this repository -
+they seeded demo/test credentials in plaintext, which shouldn't live in git
+history that other people can read. The schema is already applied to the
+production Supabase project; ask a maintainer if you need the migrations for
+setting up a new environment.
 
-- `Backend/supabase/sql/005_admin_portal_testing_user.sql`
-
-This migration does the following:
-
-1. Adds `username` column to `admin_users`.
-2. Adds unique constraint for `username`.
-3. Adds `published_by_admin_id` column to `articles`.
-4. Replaces `verify_admin_login` function to support username or email as identifier.
-5. Seeds the test admin user `testing` with password `123`.
-
-## SQL Execution Order
-
-Run in this order inside Supabase SQL Editor:
-
-1. `001_tables.sql`
-2. `002_functions_and_triggers.sql`
-3. `003_rls_policies.sql`
-4. `004_admin_auth_seed.sql`
-5. `005_admin_portal_testing_user.sql`
-6. `006_campus_admin_user.sql`
-
-The migrations are optional for the portal to function. While they are
-unapplied, posts are stored in `Backend/.cache/local-store.json` instead.
+Applying the schema is optional for the portal to function - while it's
+unapplied (or Supabase isn't configured), posts are stored in
+`Backend/.cache/local-store.json` instead.
 
 ## Backend Files Added/Updated
 
@@ -151,14 +136,12 @@ unapplied, posts are stored in `Backend/.cache/local-store.json` instead.
 - `Backend/src/middleware/adminAuth.js`
 - `Backend/src/controllers/adminController.js`
 - `Backend/src/routes/adminRoutes.js`
-- `Backend/supabase/sql/005_admin_portal_testing_user.sql`
 - `admin panel.md`
 
 ### Updated
 
 - `Backend/src/models/adminService.js`
 - `Backend/src/routes/index.js`
-- `Backend/supabase/sql/README.md`
 
 ## Notes
 
