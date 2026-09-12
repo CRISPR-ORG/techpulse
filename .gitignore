@@ -11,3 +11,11 @@ Backend/.cache/
 .env.local
 .env.*.local
 !.env.example
+
+# Removed from the repo on purpose (seeded plaintext demo credentials) —
+# kept locally for reference only, never re-committed.
+Backend/supabase/sql/
+
+# One-off exported Docker image for manual handoff, not a build artifact
+# that belongs in git.
+techpulse-image.tar.gz
